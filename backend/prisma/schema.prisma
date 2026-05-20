@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model StockItem {
+  id              Int      @id @default(autoincrement())
+  name            String
+  category        String
+  price           Float
+  unit            String   @default("kg")
+  available       Boolean  @default(true)
+  description     String
+  bulk1Threshold  Float    @default(0)
+  bulk1Price      Float    @default(0)
+  bulk2Threshold  Float    @default(0)
+  bulk2Price      Float    @default(0)
+}
+
+model Order {
+  id              Int      @id @default(autoincrement())
+  name            String
+  phone           String
+  totalWeight     Float
+  estimatedTotal  Float
+  timestamp       DateTime @default(now())
+  items           String   // Storing items as a JSON string for simplicity with SQLite
+}
+
+model Config {
+  id              Int      @id @default(autoincrement())
+  adminCode       String   @default("1234")
+}

@@ -1,0 +1,13 @@
+services:
+  meat-monster:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - meat-data:/app/backend/prisma
+    environment:
+      - DATABASE_URL=file:./dev.db
+    restart: always
+
+volumes:
+  meat-data:

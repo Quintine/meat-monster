@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-stone-900 text-stone-200;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+}
+
+.monster-bg {
+  background: radial-gradient(circle at 50% 50%, #292524 0%, #0c0a09 100%);
+}
+
+.text-glow {
+  text-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #1c1917; }
+::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #b91c1c; }

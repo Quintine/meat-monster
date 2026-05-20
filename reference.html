@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meat Monster - Bulk Smoked Meats</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            background-color: #1c1917; /* stone-900 */
+            color: #e7e5e4; /* stone-200 */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .monster-bg {
+            background: radial-gradient(circle at 50% 50%, #292524 0%, #0c0a09 100%);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1c1917; }
+        ::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #b91c1c; }
+        
+        .text-glow {
+            text-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- ICONS ---
+        const Icons = {
+            Beast: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8"><path d="M12 2a5 5 0 0 0-5 5v2a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"/><path d="M12 14a5 5 0 0 0-5 5v2h10v-2a5 5 0 0 0-5-5z"/><path d="M8 7h8"/><path d="M12 2v5"/></svg>,
+            ShoppingCart: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>,
+            Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+            Minus: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+            Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+            X: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+            Edit: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+            Save: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+            Scale: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>,
+            Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Alert: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
+            Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><polyline points="20 6 9 17 4 12"/></svg>
+        };
+
+        // --- HELPERS ---
+        const getPrice = (item, qty) => {
+            if (item.bulk2Threshold > 0 && qty >= item.bulk2Threshold && item.bulk2Price > 0) {
+                return item.bulk2Price;
+            }
+            if (item.bulk1Threshold > 0 && qty >= item.bulk1Threshold && item.bulk1Price > 0) {
+                return item.bulk1Price;
+            }
+            return item.price;
+        };
+
+        // --- API CLIENT ---
+        // All calls point to the Node.js server running on localhost:3000
+        const API = {
+            fetchData: () => fetch('/api/data').then(res => res.json()),
+            submitOrder: (order) => fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(order)
+            }).then(res => res.json()),
+            deleteOrder: (id) => fetch(`/api/orders/${id}`, { method: 'DELETE' }),
+            clearOrders: () => fetch('/api/orders', { method: 'DELETE' }),
+            updateStock: (item) => fetch('/api/stock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item)
+            }),
+            deleteStock: (id) => fetch(`/api/stock/${id}`, { method: 'DELETE' }),
+            updateConfig: (cfg) => fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cfg)
+            }),
+            resetDB: () => fetch('/api/reset', { method: 'POST' })
+        };
+
+        // --- APP ---
+        const { useState, useEffect } = React;
+
+        function App() {
+            const [view, setView] = useState('customer');
+            const [cart, setCart] = useState([]);
+            const [stock, setStock] = useState([]);
+            const [orders, setOrders] = useState([]);
+            const [isLoading, setIsLoading] = useState(true);
+            const [showCartModal, setShowCartModal] = useState(false);
+            const [showAdminLogin, setShowAdminLogin] = useState(false);
+            const [adminCodeInput, setAdminCodeInput] = useState('');
+            const [notification, setNotification] = useState(null);
+            const [adminCode, setAdminCode] = useState('1234');
+            const [confirmModal, setConfirmModal] = useState({ show: false, message: '', onConfirm: null });
+
+            // Initial Load and Polling 
+            useEffect(() => {
+                refreshData();
+                // Set up polling for real-time feel (check every 5 seconds)
+                const intervalId = setInterval(refreshData, 5000); 
+                return () => clearInterval(intervalId);
+            }, []);
+
+            const refreshData = async () => {
+                try {
+                    const data = await API.fetchData();
+                    setStock(data.stock);
+                    setOrders(data.orders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+                    if (data.config && data.config.adminCode) {
+                        setAdminCode(data.config.adminCode);
+                    }
+                    setIsLoading(false);
+                } catch (err) {
+                    if (isLoading) {
+                        // Display error when first trying to load if server is down
+                        console.error("Server connection failed. Ensure Node.js server.js is running.");
+                    }
+                }
+            };
+
+            const showNotification = (msg) => {
+                setNotification(msg);
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            const promptConfirm = (message, action) => {
+                setConfirmModal({ 
+                    show: true, 
+                    message, 
+                    onConfirm: async () => {
+                        await action();
+                        setConfirmModal({ show: false, message: '', onConfirm: null });
+                    }
+                });
+            };
+
+            // --- ACTIONS ---
+            const addToCart = (item) => {
+                setCart(prev => {
+                    const existing = prev.find(i => i.id === item.id);
+                    if (existing) {
+                        return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
+                    }
+                    return [...prev, { ...item, qty: 1 }];
+                });
+                showNotification(`Added 1${item.unit} ${item.name}`);
+            };
+
+            const removeFromCart = (itemId) => {
+                setCart(prev => prev.filter(i => i.id !== itemId));
+            };
+
+            const updateCartQty = (itemId, delta) => {
+                setCart(prev => prev.map(i => {
+                    if (i.id === itemId) {
+                        const newQty = i.qty + delta;
+                        return newQty > 0 ? { ...i, qty: newQty } : i;
+                    }
+                    return i;
+                }));
+            };
+
+            const submitOrder = async (name, phone) => {
+                if (!name || !phone || cart.length === 0) return;
+                
+                const itemsWithFinalPrice = cart.map(i => ({
+                    ...i,
+                    finalPricePerUnit: getPrice(i, i.qty),
+                    lineTotal: getPrice(i, i.qty) * i.qty
+                }));
+
+                const orderData = {
+                    name: name,
+                    phone: phone,
+                    items: itemsWithFinalPrice,
+                    totalWeight: cart.reduce((acc, i) => acc + i.qty, 0),
+                    estimatedTotal: itemsWithFinalPrice.reduce((acc, i) => acc + i.lineTotal, 0)
+                };
+
+                try {
+                    await API.submitOrder(orderData);
+                    setCart([]);
+                    setShowCartModal(false);
+                    refreshData();
+                    showNotification("Order Request Sent! We'll contact you.");
+                } catch (error) {
+                    showNotification("Error: Could not submit order. Server connection failed.");
+                    console.error("Order submission error:", error);
+                }
+            };
+
+            // --- ADMIN ACTIONS ---
+            const updateStockItem = async (id, updates) => {
+                const currentItem = stock.find(s => s.id === id) || { id };
+                const mergedItem = { ...currentItem, ...updates };
+                
+                await API.updateStock(mergedItem);
+                refreshData();
+                showNotification("Stock updated");
+            };
+            
+            const addNewStockItem = async () => {
+                const newItem = {
+                    name: "New Meat Item",
+                    category: "Beef",
+                    price: 20,
+                    unit: "kg",
+                    available: false,
+                    description: "Description here",
+                    bulk1Threshold: 0, bulk1Price: 0,
+                    bulk2Threshold: 0, bulk2Price: 0
+                };
+                await API.updateStock(newItem); // Server assigns ID if missing
+                refreshData();
+                showNotification("New Item Added");
+            };
+            
+            const deleteStockItem = (id) => {
+                 promptConfirm("Permanently delete this item from stock?", async () => {
+                     await API.deleteStock(id);
+                     refreshData();
+                     showNotification("Item deleted");
+                 });
+            };
+
+            const deleteOrder = (id) => {
+                promptConfirm("Delete this order record?", async () => {
+                    await API.deleteOrder(id);
+                    refreshData();
+                    showNotification("Order Deleted");
+                });
+            };
+
+            const updateAdminCode = async (newCode) => {
+                await API.updateConfig({ adminCode: newCode });
+                refreshData();
+                showNotification("Admin Password Updated");
+            };
+
+            const resetDatabase = () => {
+                promptConfirm("Wipe all data and reset to defaults?", async () => {
+                    await API.resetDB();
+                    refreshData();
+                    showNotification("Database Reset to Defaults");
+                });
+            };
+
+            const clearAllOrders = () => {
+                promptConfirm("WARNING: This will delete ALL current order history. Proceed?", async () => {
+                    await API.clearOrders();
+                    refreshData();
+                    showNotification("All Orders Cleared");
+                });
+            };
+
+            const handleAdminLogin = () => {
+                if(adminCodeInput === adminCode) {
+                    setView('admin');
+                    setShowAdminLogin(false);
+                    setAdminCodeInput('');
+                    showNotification("Logged in as Admin");
+                } else {
+                    showNotification("Incorrect Admin Code");
+                }
+            };
+
+            if (isLoading) return <div className="h-screen w-full flex items-center justify-center bg-stone-900 text-red-600 font-bold text-2xl tracking-widest uppercase animate-pulse">Loading Meat Monster...</div>;
+
+            return (
+                <div className="min-h-screen monster-bg pb-20 text-stone-200">
+                    {/* Header */}
+                    <header className="bg-stone-950 border-b border-red-900 sticky top-0 z-40 shadow-2xl">
+                        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('customer')}>
+                                <div className="text-red-600">
+                                    <Icons.Beast />
+                                </div>
+                                <div>
+                                    <h1 className="text-3xl font-black text-red-600 leading-none tracking-tighter text-glow italic">MEAT MONSTER</h1>
+                                    <p className="text-xs text-stone-500 tracking-[0.2em] font-bold uppercase">Bulk & Wholesale</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                {view === 'customer' && (
+                                    <button 
+                                        onClick={() => setShowCartModal(true)}
+                                        className="relative p-2 text-stone-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <Icons.ShoppingCart />
+                                        {cart.length > 0 && (
+                                            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                                                {cart.reduce((acc, i) => acc + i.qty, 0)}
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
+                                <button 
+                                    onClick={() => {
+                                        if (view === 'admin') setView('customer');
+                                        else {
+                                            setShowAdminLogin(true);
+                                        }
+                                    }}
+                                    className={`p-2 rounded-md transition-colors ${view === 'admin' ? 'bg-red-900/50 text-red-200' : 'text-stone-600 hover:text-stone-400'}`}
+                                >
+                                    {view === 'admin' ? <Icons.X /> : <Icons.Lock />}
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="max-w-6xl mx-auto px-4 py-8">
+                        
+                        {notification && (
+                            <div className="fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-2xl animate-bounce z-50 font-bold tracking-wide border border-red-400">
+                                {notification}
+                            </div>
+                        )}
+
+                        {view === 'customer' ? (
+                            <CustomerView stock={stock} addToCart={addToCart} />
+                        ) : (
+                            <AdminDashboard 
+                                stock={stock} 
+                                orders={orders} 
+                                updateStockItem={updateStockItem} 
+                                deleteOrder={deleteOrder}
+                                deleteStockItem={deleteStockItem}
+                                addNewStockItem={addNewStockItem}
+                                onResetDB={resetDatabase}
+                                updateAdminCode={updateAdminCode}
+                                clearAllOrders={clearAllOrders}
+                                notify={showNotification}
+                            />
+                        )}
+                    </main>
+
+                    {/* Cart Modal */}
+                    {showCartModal && (
+                        <CartModal 
+                            cart={cart} 
+                            onClose={() => setShowCartModal(false)} 
+                            onRemove={removeFromCart}
+                            onUpdateQty={updateCartQty}
+                            onSubmit={submitOrder}
+                        />
+                    )}
+
+                    {/* Admin Login Modal */}
+                    {showAdminLogin && (
+                        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                            <div className="bg-stone-950 border border-red-900 w-full max-w-xs p-6 rounded-xl shadow-2xl flex flex-col gap-4">
+                                <div className="text-center">
+                                    <div className="text-red-600 mx-auto w-10 h-10 mb-2"><Icons.Lock /></div>
+                                    <h3 className="text-xl font-bold text-white uppercase">Admin Access</h3>
+                                </div>
+                                <input 
+                                    type="password" 
+                                    placeholder="Enter Code"
+                                    autoFocus
+                                    className="bg-stone-900 border border-stone-700 rounded-lg p-3 text-center text-white tracking-widest focus:border-red-600 outline-none"
+                                    value={adminCodeInput}
+                                    onChange={(e) => setAdminCodeInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
+                                />
+                                <div className="flex gap-2">
+                                    <button onClick={() => {setShowAdminLogin(false); setAdminCodeInput('');}} className="flex-1 bg-stone-800 hover:bg-stone-700 text-stone-400 font-bold py-3 rounded-lg">Cancel</button>
+                                    <button onClick={handleAdminLogin} className="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold py-3 rounded-lg">Login</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Confirmation Modal */}
+                    {confirmModal.show && (
+                         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+                            <div className="bg-stone-950 border border-stone-700 w-full max-w-sm p-6 rounded-xl shadow-2xl text-center">
+                                <div className="text-red-500 mx-auto w-10 h-10 mb-4"><Icons.Alert /></div>
+                                <h3 className="text-lg font-bold text-white mb-6">{confirmModal.message}</h3>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => setConfirmModal({show: false, message: '', onConfirm: null})} 
+                                        className="flex-1 bg-stone-800 hover:bg-stone-700 text-stone-400 font-bold py-3 rounded-lg"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        onClick={confirmModal.onConfirm} 
+                                        className="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold py-3 rounded-lg"
+                                    >
+                                        Confirm
+                                    </button>
+                                </div>
+                            </div>
+                         </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- SUB COMPONENTS ---
+
+        function CustomerView({ stock, addToCart }) {
+            const availableStock = stock.filter(item => item.available);
+            const soldOutStock = stock.filter(item => !item.available);
+
+            return (
+                <div className="space-y-8">
+                    {/* Hero */}
+                    <div className="text-center space-y-6 py-10 bg-gradient-to-b from-stone-900/0 to-stone-900/20 rounded-3xl border border-stone-800/50">
+                        <h2 className="text-5xl md:text-6xl font-black text-white uppercase italic tracking-tight">Feed the <span className="text-red-600">Beast</span></h2>
+                        <p className="text-stone-400 max-w-2xl mx-auto text-lg font-light">
+                            Premium smoked meats by the Kilogram. <br/>
+                            <span className="text-red-400 font-bold">Bulk discounts</span> applied automatically at checkout.
+                        </p>
+                    </div>
+
+                    {/* Payment/Delivery Notice */}
+                    <div className="bg-red-900/10 border border-red-900/40 p-5 rounded-lg flex items-start gap-3 max-w-3xl mx-auto shadow-[0_0_15px_rgba(220,38,38,0.1)]">
+                        <div className="text-red-500 mt-1 flex-shrink-0"><Icons.Alert /></div>
+                        <div>
+                            <p className="text-red-400 font-bold uppercase tracking-wider text-sm mb-1">Terms of Service</p>
+                            <p className="text-stone-300 text-sm leading-relaxed">
+                                <span className="text-white font-bold underline">Cash payment is required up front</span> before any smoking begins to cover material costs. 
+                                Delivery or pickup options can be negotiated directly with us after your request is confirmed.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Menu Grid */}
+                    <div className="pt-4">
+                        <h3 className="text-2xl font-bold text-stone-300 mb-6 flex items-center gap-2"><Icons.Beast /> In The Smoker</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {availableStock.map(item => (
+                                <StockCard key={item.id} item={item} onAdd={() => addToCart(item)} />
+                            ))}
+                            {availableStock.length === 0 && <p className="text-stone-500 italic col-span-full text-center py-10 border border-dashed border-stone-800 rounded-xl">Nothing in the smoker right now.</p>}
+                        </div>
+                    </div>
+
+                    {/* Sold Out Section */}
+                    {soldOutStock.length > 0 && (
+                        <div className="opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+                            <h3 className="text-2xl font-bold text-stone-600 mb-6 border-b border-stone-800 pb-2">Sold Out</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {soldOutStock.map(item => (
+                                    <StockCard key={item.id} item={item} disabled={true} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function StockCard({ item, onAdd, disabled }) {
+            const hasTier1 = item.bulk1Threshold > 0 && item.bulk1Price > 0;
+            const hasTier2 = item.bulk2Threshold > 0 && item.bulk2Price > 0;
+            
+            return (
+                <div className="bg-[#131110] border border-stone-800 rounded-xl overflow-hidden hover:border-red-900/50 transition-all group flex flex-col shadow-lg hover:shadow-red-900/10">
+                    <div className="p-6 flex-1 relative">
+                        {/* Category Tag */}
+                        <div className="flex justify-between items-start mb-3">
+                            <span className="text-[10px] font-bold text-stone-500 uppercase tracking-[0.15em] border border-stone-800 px-2 py-1 rounded bg-stone-900">{item.category}</span>
+                        </div>
+                        
+                        <h4 className="text-2xl font-black text-stone-100 mb-1 uppercase italic">{item.name}</h4>
+                        <div className="flex items-baseline gap-1 mb-3">
+                            <span className="text-xl font-bold text-red-500">${item.price}</span>
+                            <span className="text-sm text-stone-500 font-bold">/ kg</span>
+                        </div>
+
+                        <div className="space-y-1 mb-4">
+                            {hasTier1 && (
+                                <div className="text-xs font-bold text-stone-400 bg-stone-900/50 border border-stone-800 px-2 py-1 rounded inline-block mr-2">
+                                    Buy {item.bulk1Threshold}kg+: <span className="text-green-500">${item.bulk1Price}</span>
+                                </div>
+                            )}
+                            {hasTier2 && (
+                                <div className="text-xs font-bold text-stone-400 bg-stone-900/50 border border-stone-800 px-2 py-1 rounded inline-block">
+                                    Buy {item.bulk2Threshold}kg+: <span className="text-green-400">${item.bulk2Price}</span>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <p className="text-stone-400 text-sm leading-relaxed">{item.description}</p>
+                    </div>
+                    
+                    <div className="p-4 bg-stone-950 border-t border-stone-800">
+                        <button 
+                            onClick={onAdd}
+                            disabled={disabled}
+                            className={`w-full py-3 rounded-lg font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                                disabled 
+                                ? 'bg-stone-900 text-stone-700 cursor-not-allowed border border-stone-800' 
+                                : 'bg-red-700 hover:bg-red-600 text-white shadow-lg shadow-red-900/30'
+                            }`}
+                        >
+                            {disabled ? 'Sold Out' : <><Icons.Plus /> Add to Order</>}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- ADMIN ---
+
+        function AdminDashboard({ stock, orders, updateStockItem, deleteOrder, addNewStockItem, deleteStockItem, onResetDB, updateAdminCode, clearAllOrders, notify }) {
+            const [tab, setTab] = useState('orders'); 
+            const [newAdminCode, setNewAdminCode] = useState('');
+
+            // Stats Calculations
+            const totalRevenue = orders.reduce((acc, order) => acc + (order.estimatedTotal || 0), 0);
+            const totalKg = orders.reduce((acc, order) => acc + (order.totalWeight || 0), 0);
+            const activeRequests = orders.length;
+
+            const handleUpdatePassword = () => {
+                if(newAdminCode.length < 4) {
+                    notify("Code must be at least 4 characters");
+                    return;
+                }
+                updateAdminCode(newAdminCode);
+                setNewAdminCode('');
+            };
+
+            return (
+                <div className="bg-stone-900 rounded-xl border border-stone-800 overflow-hidden min-h-[600px] shadow-2xl">
+                    <div className="flex border-b border-stone-800 bg-stone-950">
+                        <button 
+                            onClick={() => setTab('orders')}
+                            className={`flex-1 py-4 font-bold text-center transition-colors uppercase tracking-wider text-sm ${tab === 'orders' ? 'bg-stone-900 text-red-500 border-t-2 border-red-500' : 'text-stone-600 hover:text-stone-300'}`}
+                        >
+                            Requests
+                        </button>
+                        <button 
+                            onClick={() => setTab('stock')}
+                            className={`flex-1 py-4 font-bold text-center transition-colors uppercase tracking-wider text-sm ${tab === 'stock' ? 'bg-stone-900 text-red-500 border-t-2 border-red-500' : 'text-stone-600 hover:text-stone-300'}`}
+                        >
+                            Inventory
+                        </button>
+                        <button 
+                            onClick={() => setTab('settings')}
+                            className={`flex-1 py-4 font-bold text-center transition-colors uppercase tracking-wider text-sm ${tab === 'settings' ? 'bg-stone-900 text-red-500 border-t-2 border-red-500' : 'text-stone-600 hover:text-stone-300'}`}
+                        >
+                            Settings
+                        </button>
+                    </div>
+
+                    <div className="p-6">
+                        {tab === 'stock' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-end border-b border-stone-800 pb-4">
+                                    <h3 className="text-xl font-bold text-white">Stock Configuration</h3>
+                                    <p className="text-xs text-stone-500">Edit names, prices, and descriptions</p>
+                                </div>
+                                <div className="grid gap-4">
+                                    {stock.map(item => (
+                                        <AdminStockItem key={item.id} item={item} onUpdate={(data) => updateStockItem(item.id, data)} onDelete={() => deleteStockItem(item.id)} />
+                                    ))}
+                                </div>
+                                <div className="flex justify-between items-center pt-10 border-t border-stone-800 mt-10">
+                                    <button onClick={addNewStockItem} className="bg-stone-800 hover:bg-stone-700 text-white px-4 py-2 rounded font-bold flex items-center gap-2 border border-stone-700"><Icons.Plus /> Add New Stock Item</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'orders' && (
+                            <div className="space-y-6">
+                                {/* Stats Dashboard */}
+                                <div className="grid grid-cols-3 gap-4 mb-8">
+                                    <div className="bg-[#0c0a09] p-4 rounded border border-stone-800 text-center shadow-lg">
+                                        <p className="text-stone-500 text-[10px] md:text-xs uppercase font-bold tracking-widest mb-1">Est. Revenue</p>
+                                        <p className="text-2xl md:text-3xl font-black text-green-500">${totalRevenue.toFixed(2)}</p>
+                                    </div>
+                                     <div className="bg-[#0c0a09] p-4 rounded border border-stone-800 text-center shadow-lg">
+                                        <p className="text-stone-500 text-[10px] md:text-xs uppercase font-bold tracking-widest mb-1">Total Prep (kg)</p>
+                                        <p className="text-2xl md:text-3xl font-black text-stone-200">{totalKg}<span className="text-lg text-stone-600 ml-1">kg</span></p>
+                                    </div>
+                                     <div className="bg-[#0c0a09] p-4 rounded border border-stone-800 text-center shadow-lg">
+                                        <p className="text-stone-500 text-[10px] md:text-xs uppercase font-bold tracking-widest mb-1">Requests</p>
+                                        <p className="text-2xl md:text-3xl font-black text-red-500">{activeRequests}</p>
+                                    </div>
+                                </div>
+
+                                <h3 className="text-xl font-bold text-white mb-4 border-b border-stone-800 pb-2">Incoming List</h3>
+                                {orders.length === 0 ? (
+                                    <div className="text-center py-10 bg-stone-950 rounded border border-dashed border-stone-800">
+                                        <p className="text-stone-500 italic">No active orders. Time to smoke some meat!</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {orders.map(order => (
+                                            <div key={order.id} className="bg-stone-950 p-5 rounded-lg border border-stone-800 relative group hover:border-stone-700 transition-colors shadow-md">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <h4 className="font-bold text-lg text-red-400">{order.name || order.email}</h4>
+                                                        <p className="text-sm text-stone-300 font-mono mb-1">{order.phone}</p>
+                                                        <p className="text-xs text-stone-500">
+                                                            {order.timestamp ? new Date(order.timestamp).toLocaleString() : 'Just now'}
+                                                        </p>
+                                                    </div>
+                                                    <button onClick={() => deleteOrder(order.id)} className="text-stone-600 hover:text-red-500 transition-colors bg-stone-900 p-2 rounded">
+                                                        <Icons.Trash />
+                                                    </button>
+                                                </div>
+                                                <div className="bg-stone-900 rounded p-3 border border-stone-800/50">
+                                                    {order.items.map((item, idx) => {
+                                                        const currentPrice = item.finalPricePerUnit || item.price;
+                                                        return (
+                                                            <div key={idx} className="flex justify-between text-sm py-2 border-b border-stone-800 last:border-0">
+                                                                <div>
+                                                                    <span className="text-stone-300 font-bold block">{item.name}</span>
+                                                                    <span className="text-stone-500 text-xs">
+                                                                        {item.qty}kg @ ${currentPrice}/kg
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-stone-400 font-mono">${(item.lineTotal).toFixed(2)}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    <div className="flex justify-between mt-3 pt-3 border-t border-stone-800 font-bold">
+                                                        <span className="text-white">Total Est.</span>
+                                                        <span className="text-red-500">${order.estimatedTotal?.toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {tab === 'settings' && (
+                            <div className="max-w-md mx-auto text-center pt-10">
+                                <div className="text-stone-500 mb-4"><Icons.Settings /></div>
+                                <h3 className="text-xl font-bold text-white mb-6">Admin Settings</h3>
+                                
+                                <div className="bg-stone-950 p-6 rounded-xl border border-stone-800 mb-8">
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2 text-left">Update Admin Password</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="New Code"
+                                        value={newAdminCode}
+                                        onChange={(e) => setNewAdminCode(e.target.value)}
+                                        className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white mb-4 focus:border-red-600 outline-none"
+                                    />
+                                    <button 
+                                        onClick={handleUpdatePassword}
+                                        disabled={!newAdminCode}
+                                        className="w-full bg-red-700 hover:bg-red-600 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold py-3 rounded transition-colors"
+                                    >
+                                        Update Password
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4 border-t border-stone-800 pt-8">
+                                    <p className="text-xs font-bold text-stone-500 uppercase">Danger Zone</p>
+                                    <button onClick={clearAllOrders} className="w-full py-3 border border-red-900/50 text-red-500 hover:bg-red-900/20 rounded text-sm font-bold transition-colors">
+                                        Clear All Order History
+                                    </button>
+                                    <button onClick={onResetDB} className="text-xs text-stone-600 hover:text-red-500 underline block w-full">
+                                        Reset Entire Database to Defaults
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function AdminStockItem({ item, onUpdate, onDelete }) {
+            const [isEditing, setIsEditing] = useState(false);
+            const [editData, setEditData] = useState({});
+
+            useEffect(() => {
+                setEditData({
+                    name: item.name || "",
+                    category: item.category || "",
+                    description: item.description || "",
+                    price: item.price || 0,
+                    bulk1Threshold: item.bulk1Threshold || 0,
+                    bulk1Price: item.bulk1Price || 0,
+                    bulk2Threshold: item.bulk2Threshold || 0,
+                    bulk2Price: item.bulk2Price || 0
+                });
+            }, [item]);
+
+            const handleSave = () => {
+                onUpdate({
+                    name: editData.name,
+                    category: editData.category,
+                    description: editData.description,
+                    price: parseFloat(editData.price),
+                    bulk1Threshold: parseFloat(editData.bulk1Threshold),
+                    bulk1Price: parseFloat(editData.bulk1Price),
+                    bulk2Threshold: parseFloat(editData.bulk2Threshold),
+                    bulk2Price: parseFloat(editData.bulk2Price)
+                });
+                setIsEditing(false);
+            };
+
+            return (
+                <div className="bg-stone-950 p-4 rounded-lg border border-stone-800 flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                            {!isEditing ? (
+                                <div className="flex-1">
+                                    <p className="font-bold text-white text-lg">{item.name}</p>
+                                    <p className="text-xs text-stone-500 italic">{item.description}</p>
+                                </div>
+                            ) : (
+                                <div className="flex-1 flex flex-col gap-2 mr-4">
+                                    <input 
+                                        type="text" 
+                                        value={editData.name} 
+                                        onChange={e => setEditData({...editData, name: e.target.value})} 
+                                        className="bg-black text-white border border-stone-700 rounded px-2 py-1 font-bold w-full" 
+                                        placeholder="Item Name"
+                                    />
+                                    <textarea
+                                        value={editData.description}
+                                        onChange={e => setEditData({...editData, description: e.target.value})}
+                                        className="bg-black text-stone-400 border border-stone-700 rounded px-2 py-1 text-xs w-full h-16"
+                                        placeholder="Description"
+                                    />
+                                </div>
+                            )}
+                            
+                            {!isEditing && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${item.available ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
+                                    {item.available ? 'Active' : 'Disabled'}
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {isEditing ? (
+                                <>
+                                    <button onClick={handleSave} className="p-2 bg-green-600 hover:bg-green-500 text-white rounded"><Icons.Save /></button>
+                                    <button onClick={onDelete} className="p-2 bg-red-900 hover:bg-red-700 text-white rounded"><Icons.Trash /></button>
+                                </>
+                            ) : (
+                                <button onClick={() => setIsEditing(true)} className="p-2 bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white rounded"><Icons.Edit /></button>
+                            )}
+                            
+                            <button 
+                                onClick={() => onUpdate({ available: !item.available })}
+                                className={`px-3 py-2 rounded font-bold text-xs uppercase w-24 text-center ${item.available ? 'bg-stone-800 text-red-400 border border-red-900/30 hover:bg-red-900/20' : 'bg-green-900/20 text-green-400 border border-green-900/30 hover:bg-green-900/40'}`}
+                            >
+                                {item.available ? 'Sold Out' : 'Activate'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {!isEditing ? (
+                        <div className="text-sm text-stone-500 flex flex-wrap gap-4">
+                            <span className="bg-stone-900 px-2 py-1 rounded">Standard: <b className="text-stone-300">${item.price}/kg</b></span>
+                            {item.bulk1Threshold > 0 && (
+                                <span className="bg-stone-900 px-2 py-1 rounded text-yellow-600">
+                                    Tier 1: <b className="text-yellow-500">${item.bulk1Price}</b> @ {item.bulk1Threshold}kg+
+                                </span>
+                            )}
+                            {item.bulk2Threshold > 0 && (
+                                <span className="bg-stone-900 px-2 py-1 rounded text-green-600">
+                                    Tier 2: <b className="text-green-500">${item.bulk2Price}</b> @ {item.bulk2Threshold}kg+
+                                </span>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-stone-900 p-3 rounded border border-stone-700">
+                            <div className="space-y-2">
+                                <p className="text-xs font-bold text-stone-400 uppercase">Base Info</p>
+                                <label className="block text-[10px] text-stone-500">Price ($)</label>
+                                <input type="number" value={editData.price} onChange={e => setEditData({...editData, price: e.target.value})} className="w-full bg-black text-white border border-stone-700 rounded px-2 py-1 text-sm" />
+                                <label className="block text-[10px] text-stone-500">Category</label>
+                                <input type="text" value={editData.category} onChange={e => setEditData({...editData, category: e.target.value})} className="w-full bg-black text-white border border-stone-700 rounded px-2 py-1 text-sm" />
+                            </div>
+                            <div className="space-y-2 border-l border-stone-800 pl-4">
+                                <p className="text-xs font-bold text-yellow-500 uppercase">Tier 1 Bulk</p>
+                                <label className="block text-[10px] text-stone-500">Threshold (kg)</label>
+                                <input type="number" value={editData.bulk1Threshold} onChange={e => setEditData({...editData, bulk1Threshold: e.target.value})} className="w-full bg-black text-white border border-stone-700 rounded px-2 py-1 text-sm" />
+                                <label className="block text-[10px] text-stone-500">Price ($)</label>
+                                <input type="number" value={editData.bulk1Price} onChange={e => setEditData({...editData, bulk1Price: e.target.value})} className="w-full bg-black text-white border border-stone-700 rounded px-2 py-1 text-sm" />
+                            </div>
+                            <div className="space-y-2 border-l border-stone-800 pl-4">
+                                <p className="text-xs font-bold text-green-500 uppercase">Tier 2 Super Bulk</p>
+                                <label className="block text-[10px] text-stone-500">Threshold (kg)</label>
+                                <input type="number" value={editData.bulk2Threshold} onChange={e => setEditData({...editData, bulk2Threshold: e.target.value})} className="w-full bg-black text-white border border-stone-700 rounded px-2 py-1 text-sm" />
+                                <label className="block text-[10px] text-stone-500">Price ($)</label>
+                                <input type="number" value={editData.bulk2Price} onChange={e => setEditData({...editData, bulk2Price: e.target.value})} className="w-full bg-black text-white border border-stone-700 rounded px-2 py-1 text-sm" />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubmit }) {
+            const [name, setName] = useState('');
+            const [phone, setPhone] = useState('');
+            
+            // Calculate Total with Bulk Logic
+            const total = cart.reduce((acc, item) => {
+                const price = getPrice(item, item.qty);
+                return acc + (price * item.qty);
+            }, 0);
+
+            const totalWeight = cart.reduce((acc, i) => acc + i.qty, 0);
+
+            return (
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-[#1c1917] border border-stone-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-stone-800 flex justify-between items-center bg-[#0c0a09]">
+                            <h2 className="text-xl font-black italic text-white flex items-center gap-2 text-glow uppercase"><Icons.Beast /> Your Order</h2>
+                            <button onClick={onClose} className="text-stone-500 hover:text-white"><Icons.X /></button>
+                        </div>
+                        
+                        <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                            {cart.length === 0 ? (
+                                <div className="text-center py-10 text-stone-500">
+                                    <p>Feed the beast. Add some meat.</p>
+                                    <button onClick={onClose} className="mt-4 text-red-500 font-bold hover:underline">Back to Menu</button>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {cart.map(item => {
+                                        const currentPrice = getPrice(item, item.qty);
+                                        // Check what tier we are in
+                                        const isTier2 = item.bulk2Threshold > 0 && item.qty >= item.bulk2Threshold;
+                                        const isTier1 = !isTier2 && item.bulk1Threshold > 0 && item.qty >= item.bulk1Threshold;
+                                        
+                                        // Logic for "Next Tier" message
+                                        let nextTierMsg = null;
+                                        if (!isTier2 && item.bulk2Threshold > 0) {
+                                            const diff = item.bulk2Threshold - item.qty;
+                                            if (diff > 0) nextTierMsg = `Add ${diff}kg for Tier 2 ($${item.bulk2Price})`;
+                                        } 
+                                        if (!isTier1 && !isTier2 && item.bulk1Threshold > 0 && (!nextTierMsg || (item.bulk1Threshold - item.qty) < (item.bulk2Threshold - item.qty))) {
+                                             // Prioritize showing nearest tier
+                                             const diff = item.bulk1Threshold - item.qty;
+                                             if (diff > 0) nextTierMsg = `Add ${diff}kg for Tier 1 ($${item.bulk1Price})`;
+                                        }
+
+                                        return (
+                                            <div key={item.id} className="flex flex-col gap-2 pb-4 border-b border-stone-800 last:border-0">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex-1">
+                                                        <h4 className="font-bold text-stone-200 text-lg">{item.name}</h4>
+                                                        <div className="text-sm">
+                                                            <span className={(isTier1 || isTier2) ? "text-green-500 font-bold" : "text-stone-500"}>
+                                                                ${currentPrice}/kg
+                                                            </span>
+                                                            {(isTier1 || isTier2) && <span className="text-xs text-stone-500 line-through ml-2">${item.price}</span>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center bg-stone-950 rounded-lg border border-stone-800">
+                                                        <button onClick={() => onUpdateQty(item.id, -1)} className="p-3 text-stone-400 hover:text-white"><Icons.Minus /></button>
+                                                        <span className="w-12 text-center font-mono text-white font-bold">{item.qty}kg</span>
+                                                        <button onClick={() => onUpdateQty(item.id, 1)} className="p-3 text-stone-400 hover:text-white"><Icons.Plus /></button>
+                                                    </div>
+                                                    <button onClick={() => onRemove(item.id)} className="text-stone-600 hover:text-red-500 p-2"><Icons.Trash /></button>
+                                                </div>
+                                                
+                                                {/* Discount Progress Bar/Indicator */}
+                                                {nextTierMsg && (
+                                                     <div className="text-xs text-stone-500 bg-stone-900 py-1 px-2 rounded flex justify-between items-center">
+                                                        <span>{nextTierMsg}</span>
+                                                        <Icons.Scale />
+                                                     </div>
+                                                )}
+                                                {isTier1 && !isTier2 && (
+                                                     <div className="text-xs text-yellow-500 font-bold flex items-center gap-1">
+                                                        <Icons.Check /> Tier 1 Applied!
+                                                     </div>
+                                                )}
+                                                {isTier2 && (
+                                                     <div className="text-xs text-green-500 font-bold flex items-center gap-1">
+                                                        <Icons.Check /> Tier 2 Super Bulk Applied!
+                                                     </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {cart.length > 0 && (
+                            <div className="p-6 bg-[#0c0a09] border-t border-stone-800">
+                                <div className="flex justify-between mb-6 text-xl font-bold">
+                                    <span className="text-stone-400">Total Est. ({totalWeight}kg)</span>
+                                    <span className="text-red-500 text-2xl">${total.toFixed(2)}</span>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    
+                                    {/* Terms Acknowledgement in Cart */}
+                                    <div className="text-xs bg-stone-950 p-3 rounded border border-stone-800 text-stone-400">
+                                        <p className="font-bold text-red-500 mb-1 uppercase">Payment Required</p>
+                                        <p>By submitting, you agree to pay upfront via cash. Delivery/Pickup will be negotiated upon confirmation.</p>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Name</label>
+                                            <input 
+                                                type="text" 
+                                                required
+                                                placeholder="Your Name"
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                className="w-full bg-stone-900 border border-stone-700 rounded-lg p-4 text-white focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Phone Number</label>
+                                            <input 
+                                                type="tel" 
+                                                required
+                                                placeholder="0400 000 000"
+                                                value={phone}
+                                                onChange={(e) => setPhone(e.target.value)}
+                                                className="w-full bg-stone-900 border border-stone-700 rounded-lg p-4 text-white focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => onSubmit(name, phone)}
+                                        disabled={!name || !phone}
+                                        className="w-full bg-red-700 hover:bg-red-600 disabled:bg-stone-800 disabled:text-stone-600 text-white font-black uppercase tracking-widest py-4 rounded-lg transition-all shadow-lg shadow-red-900/20 active:scale-[0.98]"
+                                    >
+                                        Submit Order
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
