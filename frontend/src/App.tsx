@@ -57,24 +57,80 @@ function App() {
   };
 
   const addToCart = (item: any) => {
+    const maxItem = config?.maxItemWeight ?? 50;
+    const maxTotal = config?.maxTotalWeight ?? 100;
+    
+    let isAllowed = true;
+    let errorMsg = '';
+
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
+      const currentQty = existing ? existing.qty : 0;
+      const targetItemQty = currentQty + 1;
+      const currentTotalWeight = prev.reduce((acc, i) => acc + i.qty, 0);
+      const targetTotalWeight = currentTotalWeight + 1;
+
+      if (targetItemQty > maxItem) {
+        isAllowed = false;
+        errorMsg = `Limit reached: Max ${maxItem}${item.unit} per item.`;
+        return prev;
+      }
+
+      if (targetTotalWeight > maxTotal) {
+        isAllowed = false;
+        errorMsg = `Limit reached: Max ${maxTotal}kg total order weight.`;
+        return prev;
+      }
+
       if (existing) {
         return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
       }
       return [...prev, { ...item, qty: 1 }];
     });
-    showNotification(`Added 1${item.unit} ${item.name}`);
+
+    if (!isAllowed) {
+      showNotification(errorMsg);
+    } else {
+      showNotification(`Added 1${item.unit} ${item.name}`);
+    }
   };
 
   const updateCartQty = (itemId: number, delta: number) => {
-    setCart(prev => prev.map(i => {
-      if (i.id === itemId) {
-        const newQty = i.qty + delta;
-        return newQty > 0 ? { ...i, qty: newQty } : i;
+    const maxItem = config?.maxItemWeight ?? 50;
+    const maxTotal = config?.maxTotalWeight ?? 100;
+    
+    let isAllowed = true;
+    let errorMsg = '';
+
+    setCart(prev => {
+      const existing = prev.find(i => i.id === itemId);
+      if (!existing) return prev;
+
+      const newQty = existing.qty + delta;
+      if (newQty <= 0) return prev;
+
+      if (delta > 0) {
+        if (newQty > maxItem) {
+          isAllowed = false;
+          errorMsg = `Limit reached: Max ${maxItem}${existing.unit} per item.`;
+          return prev;
+        }
+
+        const currentTotalWeight = prev.reduce((acc, i) => acc + i.qty, 0);
+        const targetTotalWeight = currentTotalWeight + delta;
+        if (targetTotalWeight > maxTotal) {
+          isAllowed = false;
+          errorMsg = `Limit reached: Max ${maxTotal}kg total order weight.`;
+          return prev;
+        }
       }
-      return i;
-    }));
+
+      return prev.map(i => i.id === itemId ? { ...i, qty: newQty } : i);
+    });
+
+    if (!isAllowed) {
+      showNotification(errorMsg);
+    }
   };
 
   const removeFromCart = (itemId: number) => {

@@ -42,4 +42,6 @@ model Config {
   finalDepositDate String?
   cookDay          String?
   payIdInfo        String?  @default("Your PayID Here")
+  maxTotalWeight   Float?   @default(100.0)
+  maxItemWeight    Float?   @default(50.0)
 }

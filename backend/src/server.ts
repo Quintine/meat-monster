@@ -138,13 +138,15 @@ app.delete('/api/stock/:id', async (req, res) => {
 // Update Config
 app.post('/api/config', async (req, res) => {
   try {
-    const { adminCode, finalDepositDate, cookDay, payIdInfo } = req.body;
+    const { adminCode, finalDepositDate, cookDay, payIdInfo, maxTotalWeight, maxItemWeight } = req.body;
     const config = await prisma.config.findFirst();
     const data: any = {};
     if (adminCode !== undefined) data.adminCode = adminCode;
     if (finalDepositDate !== undefined) data.finalDepositDate = finalDepositDate;
     if (cookDay !== undefined) data.cookDay = cookDay;
     if (payIdInfo !== undefined) data.payIdInfo = payIdInfo;
+    if (maxTotalWeight !== undefined) data.maxTotalWeight = maxTotalWeight !== null ? parseFloat(maxTotalWeight) : null;
+    if (maxItemWeight !== undefined) data.maxItemWeight = maxItemWeight !== null ? parseFloat(maxItemWeight) : null;
 
     if (config) {
       await prisma.config.update({
@@ -168,8 +170,8 @@ app.post('/api/reset', async (req, res) => {
     await prisma.stockItem.deleteMany();
     await prisma.config.deleteMany();
     
-    // Seed default admin code
-    await prisma.config.create({ data: { adminCode: '1234' } });
+    // Seed default admin code and limits
+    await prisma.config.create({ data: { adminCode: '1234', maxTotalWeight: 100.0, maxItemWeight: 50.0 } });
     
     // Seed some default stock items
     await prisma.stockItem.createMany({

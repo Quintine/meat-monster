@@ -5,6 +5,27 @@ import { API } from '../services/api';
 export default function AdminDashboard({ stock, orders, config, refreshData, notify, promptConfirm }: any) {
     const [tab, setTab] = useState<'orders' | 'stock' | 'settings'>('orders');
     const [newAdminCode, setNewAdminCode] = useState('');
+    const [settingsForm, setSettingsForm] = useState<any>(null);
+
+    useEffect(() => {
+        if (config && !settingsForm) {
+            setSettingsForm({
+                finalDepositDate: config.finalDepositDate || '',
+                cookDay: config.cookDay || '',
+                payIdInfo: config.payIdInfo || '',
+                maxTotalWeight: config.maxTotalWeight !== undefined && config.maxTotalWeight !== null ? config.maxTotalWeight : 100,
+                maxItemWeight: config.maxItemWeight !== undefined && config.maxItemWeight !== null ? config.maxItemWeight : 50
+            });
+        }
+    }, [config, settingsForm]);
+
+    const handleSaveSettings = async () => {
+        if (!settingsForm) return;
+        await API.updateConfig(settingsForm);
+        notify("Settings Saved");
+        setSettingsForm(null);
+        refreshData();
+    };
 
     const totalRevenue = orders.reduce((acc: number, order: any) => acc + (order.estimatedTotal || 0), 0);
     const totalKg = orders.reduce((acc: number, order: any) => acc + (order.totalWeight || 0), 0);
@@ -175,39 +196,72 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
                     <div className="max-w-md mx-auto text-center pt-10">
                         <div className="text-stone-500 mb-4 mx-auto flex justify-center"><Icons.Settings /></div>
                         <h3 className="text-xl font-bold text-white mb-6">Admin Settings</h3>
-                        <div className="bg-stone-950 p-6 rounded-xl border border-stone-800 mb-8 space-y-6 text-left">
-                            <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest border-b border-stone-800 pb-2">Scheduling & Deadlines</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {settingsForm ? (
+                            <div className="bg-stone-950 p-6 rounded-xl border border-stone-800 mb-8 space-y-6 text-left">
+                                <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest border-b border-stone-800 pb-2">Scheduling & Deadlines</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Final Deposit Date</label>
+                                        <input 
+                                            type="datetime-local" 
+                                            value={settingsForm.finalDepositDate} 
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, finalDepositDate: e.target.value })}
+                                            className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Scheduled Cook Day</label>
+                                        <input 
+                                            type="date" 
+                                            value={settingsForm.cookDay} 
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, cookDay: e.target.value })}
+                                            className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
+                                        />
+                                    </div>
+                                </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Final Deposit Date</label>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2">PayID Details</label>
                                     <input 
-                                        type="datetime-local" 
-                                        value={config?.finalDepositDate || ''} 
-                                        onChange={(e) => API.updateConfig({ finalDepositDate: e.target.value }).then(refreshData)}
+                                        type="text" 
+                                        placeholder="e.g. 0400 000 000 or email@domain.com"
+                                        value={settingsForm.payIdInfo} 
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, payIdInfo: e.target.value })}
                                         className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Scheduled Cook Day</label>
-                                    <input 
-                                        type="date" 
-                                        value={config?.cookDay || ''} 
-                                        onChange={(e) => API.updateConfig({ cookDay: e.target.value }).then(refreshData)}
-                                        className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
-                                    />
+
+                                <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest border-b border-stone-800 pt-4 pb-2">Order Limits</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Max Total Order (kg)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settingsForm.maxTotalWeight} 
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, maxTotalWeight: parseFloat(e.target.value) || 0 })}
+                                            className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Max Per Item (kg)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settingsForm.maxItemWeight} 
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, maxItemWeight: parseFloat(e.target.value) || 0 })}
+                                            className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
+                                        />
+                                    </div>
                                 </div>
+
+                                <button 
+                                    onClick={handleSaveSettings} 
+                                    className="w-full bg-red-700 hover:bg-red-600 text-white font-bold py-3.5 rounded-lg transition-colors uppercase tracking-widest text-xs font-black shadow-lg shadow-red-900/20 active:scale-[0.98]"
+                                >
+                                    Save Settings
+                                </button>
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-stone-500 uppercase mb-2">PayID Details</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="e.g. 0400 000 000 or email@domain.com"
-                                    value={config?.payIdInfo || ''} 
-                                    onChange={(e) => API.updateConfig({ payIdInfo: e.target.value }).then(refreshData)}
-                                    className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
-                                />
-                            </div>
-                        </div>
+                        ) : (
+                            <div className="text-stone-500 py-10 italic">Loading settings...</div>
+                        )}
 
                         <div className="bg-stone-950 p-6 rounded-xl border border-stone-800 mb-8">
                             <label className="block text-xs font-bold text-stone-500 uppercase mb-2 text-left">Update Admin Password</label>
@@ -231,18 +285,20 @@ function AdminStockItem({ item, onUpdate, onDelete }: any) {
     const [editData, setEditData] = useState<any>({});
 
     useEffect(() => {
-        setEditData({
-            name: item.name || "",
-            category: item.category || "",
-            description: item.description || "",
-            price: item.price || 0,
-            unit: item.unit || "kg",
-            bulk1Threshold: item.bulk1Threshold || 0,
-            bulk1Price: item.bulk1Price || 0,
-            bulk2Threshold: item.bulk2Threshold || 0,
-            bulk2Price: item.bulk2Price || 0
-        });
-    }, [item]);
+        if (!isEditing) {
+            setEditData({
+                name: item.name || "",
+                category: item.category || "",
+                description: item.description || "",
+                price: item.price || 0,
+                unit: item.unit || "kg",
+                bulk1Threshold: item.bulk1Threshold || 0,
+                bulk1Price: item.bulk1Price || 0,
+                bulk2Threshold: item.bulk2Threshold || 0,
+                bulk2Price: item.bulk2Price || 0
+            });
+        }
+    }, [item, isEditing]);
 
     const handleSave = () => {
         onUpdate({
