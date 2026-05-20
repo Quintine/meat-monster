@@ -16,7 +16,7 @@ app.use(express.json());
 // Fetch all data (Stock, Orders, Config)
 app.get('/api/data', async (req, res) => {
   try {
-    const stock = await prisma.stockItem.findMany();
+    let stock = await prisma.stockItem.findMany();
     const orders = await prisma.order.findMany();
     const config = await prisma.config.findFirst();
     
@@ -26,7 +26,41 @@ app.get('/api/data', async (req, res) => {
       items: JSON.parse(order.items)
     }));
 
-    res.json({ stock, orders: parsedOrders, config });
+    // Tally total ordered kg per stock item across all orders
+    const orderedQtyById: Record<number, number> = {};
+    for (const order of parsedOrders) {
+      for (const item of order.items) {
+        orderedQtyById[item.id] = (orderedQtyById[item.id] || 0) + (item.qty || 0);
+      }
+    }
+
+    // Auto-deactivate items that have hit their maxStock limit
+    for (const item of stock) {
+      if (item.maxStock !== null && item.maxStock !== undefined) {
+        const ordered = orderedQtyById[item.id] || 0;
+        const shouldBeAvailable = ordered < item.maxStock;
+        if (item.available !== shouldBeAvailable) {
+          await prisma.stockItem.update({
+            where: { id: item.id },
+            data: { available: shouldBeAvailable }
+          });
+        }
+      }
+    }
+
+    // Re-fetch stock after potential auto-updates
+    stock = await prisma.stockItem.findMany();
+
+    // Attach remaining stock info to each item
+    const stockWithRemaining = stock.map(item => ({
+      ...item,
+      orderedQty: orderedQtyById[item.id] || 0,
+      remainingStock: item.maxStock !== null && item.maxStock !== undefined
+        ? Math.max(0, item.maxStock - (orderedQtyById[item.id] || 0))
+        : null
+    }));
+
+    res.json({ stock: stockWithRemaining, orders: parsedOrders, config });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch data' });
@@ -138,15 +172,13 @@ app.delete('/api/stock/:id', async (req, res) => {
 // Update Config
 app.post('/api/config', async (req, res) => {
   try {
-    const { adminCode, finalDepositDate, cookDay, payIdInfo, maxTotalWeight, maxItemWeight } = req.body;
+    const { adminCode, finalDepositDate, cookDay, payIdInfo } = req.body;
     const config = await prisma.config.findFirst();
     const data: any = {};
     if (adminCode !== undefined) data.adminCode = adminCode;
     if (finalDepositDate !== undefined) data.finalDepositDate = finalDepositDate;
     if (cookDay !== undefined) data.cookDay = cookDay;
     if (payIdInfo !== undefined) data.payIdInfo = payIdInfo;
-    if (maxTotalWeight !== undefined) data.maxTotalWeight = maxTotalWeight !== null ? parseFloat(maxTotalWeight) : null;
-    if (maxItemWeight !== undefined) data.maxItemWeight = maxItemWeight !== null ? parseFloat(maxItemWeight) : null;
 
     if (config) {
       await prisma.config.update({

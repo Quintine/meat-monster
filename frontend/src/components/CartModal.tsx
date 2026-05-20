@@ -167,11 +167,6 @@ export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubm
                             <div className="text-xs bg-stone-950 p-3 rounded border border-stone-800 text-stone-400">
                                 <p className="font-bold text-red-500 mb-1 uppercase tracking-widest">Deposit Required</p>
                                 <p>Order will not be cooked until the 30% deposit is paid. We accept PayID and Cash.</p>
-                                {(config?.maxTotalWeight || config?.maxItemWeight) && (
-                                    <p className="mt-2 border-t border-stone-850 pt-2 text-[10px] text-stone-500 italic">
-                                        Limits: Max {config.maxTotalWeight ?? 100}kg total weight | Max {config.maxItemWeight ?? 50}kg per item.
-                                    </p>
-                                )}
                             </div>
                             <div className="space-y-3">
                                 <div>

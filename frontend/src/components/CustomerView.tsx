@@ -14,15 +14,27 @@ interface StockItem {
     bulk2Price: number;
 }
 
-function StockCard({ item, onAdd, disabled }: { item: StockItem, onAdd?: () => void, disabled?: boolean }) {
+function StockCard({ item, onAdd, disabled }: { item: any, onAdd?: () => void, disabled?: boolean }) {
     const hasTier1 = item.bulk1Threshold > 0 && item.bulk1Price > 0;
     const hasTier2 = item.bulk2Threshold > 0 && item.bulk2Price > 0;
+    const hasLimit = item.maxStock !== null && item.maxStock !== undefined;
+    const remaining = item.remainingStock;
+    const stockPct = hasLimit ? Math.max(0, (remaining / item.maxStock) * 100) : 100;
     
     return (
         <div className="bg-[#131110] border border-stone-800 rounded-xl overflow-hidden hover:border-red-900/50 transition-all group flex flex-col shadow-lg hover:shadow-red-900/10">
             <div className="p-6 flex-1 relative">
                 <div className="flex justify-between items-start mb-3">
                     <span className="text-[10px] font-bold text-stone-500 uppercase tracking-[0.15em] border border-stone-800 px-2 py-1 rounded bg-stone-900">{item.category}</span>
+                    {hasLimit && (
+                        <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded ${
+                            stockPct <= 25 ? 'text-red-400 bg-red-950/50 border border-red-900/50' :
+                            stockPct <= 60 ? 'text-amber-400 bg-amber-950/50 border border-amber-900/50' :
+                            'text-green-400 bg-green-950/50 border border-green-900/50'
+                        }`}>
+                            {remaining}{item.unit} left
+                        </span>
+                    )}
                 </div>
                 
                 <h4 className="text-2xl font-black text-stone-100 mb-1 uppercase italic">{item.name}</h4>
@@ -45,6 +57,21 @@ function StockCard({ item, onAdd, disabled }: { item: StockItem, onAdd?: () => v
                 </div>
                 
                 <p className="text-stone-400 text-sm leading-relaxed">{item.description}</p>
+
+                {hasLimit && (
+                    <div className="mt-4">
+                        <div className="h-1.5 bg-stone-800 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all ${
+                                    stockPct <= 25 ? 'bg-red-600' :
+                                    stockPct <= 60 ? 'bg-amber-500' :
+                                    'bg-green-500'
+                                }`}
+                                style={{ width: `${Math.max(3, stockPct)}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
             
             <div className="p-4 bg-stone-950 border-t border-stone-800">
@@ -64,7 +91,7 @@ function StockCard({ item, onAdd, disabled }: { item: StockItem, onAdd?: () => v
     );
 }
 
-export default function CustomerView({ stock, addToCart, config }: { stock: StockItem[], addToCart: (item: StockItem) => void, config?: any }) {
+export default function CustomerView({ stock, onAddToCart, config }: { stock: any[], onAddToCart: (item: any) => void, config?: any }) {
     const availableStock = stock.filter(item => item.available);
     const soldOutStock = stock.filter(item => !item.available);
 
@@ -126,8 +153,8 @@ export default function CustomerView({ stock, addToCart, config }: { stock: Stoc
             <div className="pt-4">
                 <h3 className="text-2xl font-bold text-stone-300 mb-6 flex items-center gap-2"><Icons.Beast /> In The Smoker</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {availableStock.map(item => (
-                        <StockCard key={item.id} item={item} onAdd={() => addToCart(item)} />
+                {availableStock.map(item => (
+                        <StockCard key={item.id} item={item} onAdd={() => onAddToCart(item)} />
                     ))}
                     {availableStock.length === 0 && <p className="text-stone-500 italic col-span-full text-center py-10 border border-dashed border-stone-800 rounded-xl">Nothing in the smoker right now.</p>}
                 </div>

@@ -4,6 +4,7 @@ import { Icons } from './components/Icons';
 import CustomerView from './components/CustomerView';
 import AdminDashboard from './components/AdminDashboard';
 import CartModal from './components/CartModal';
+import QuantityPicker from './components/QuantityPicker';
 
 function App() {
   const [view, setView] = useState<'customer' | 'admin'>('customer');
@@ -18,6 +19,7 @@ function App() {
   const [adminCode, setAdminCode] = useState('1234');
   const [config, setConfig] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ show: boolean, message: string, onConfirm: (() => void) | null }>({ show: false, message: '', onConfirm: null });
+  const [pickerItem, setPickerItem] = useState<any>(null);
 
   useEffect(() => {
     refreshData();
@@ -56,81 +58,25 @@ function App() {
     });
   };
 
-  const addToCart = (item: any) => {
-    const maxItem = config?.maxItemWeight ?? 50;
-    const maxTotal = config?.maxTotalWeight ?? 100;
-    
-    let isAllowed = true;
-    let errorMsg = '';
-
+  const addToCart = (item: any, qty: number = 1) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
-      const currentQty = existing ? existing.qty : 0;
-      const targetItemQty = currentQty + 1;
-      const currentTotalWeight = prev.reduce((acc, i) => acc + i.qty, 0);
-      const targetTotalWeight = currentTotalWeight + 1;
-
-      if (targetItemQty > maxItem) {
-        isAllowed = false;
-        errorMsg = `Limit reached: Max ${maxItem}${item.unit} per item.`;
-        return prev;
-      }
-
-      if (targetTotalWeight > maxTotal) {
-        isAllowed = false;
-        errorMsg = `Limit reached: Max ${maxTotal}kg total order weight.`;
-        return prev;
-      }
-
       if (existing) {
-        return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
+        return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + qty } : i);
       }
-      return [...prev, { ...item, qty: 1 }];
+      return [...prev, { ...item, qty }];
     });
-
-    if (!isAllowed) {
-      showNotification(errorMsg);
-    } else {
-      showNotification(`Added 1${item.unit} ${item.name}`);
-    }
+    showNotification(`Added ${qty}${item.unit} ${item.name}`);
   };
 
   const updateCartQty = (itemId: number, delta: number) => {
-    const maxItem = config?.maxItemWeight ?? 50;
-    const maxTotal = config?.maxTotalWeight ?? 100;
-    
-    let isAllowed = true;
-    let errorMsg = '';
-
-    setCart(prev => {
-      const existing = prev.find(i => i.id === itemId);
-      if (!existing) return prev;
-
-      const newQty = existing.qty + delta;
-      if (newQty <= 0) return prev;
-
-      if (delta > 0) {
-        if (newQty > maxItem) {
-          isAllowed = false;
-          errorMsg = `Limit reached: Max ${maxItem}${existing.unit} per item.`;
-          return prev;
-        }
-
-        const currentTotalWeight = prev.reduce((acc, i) => acc + i.qty, 0);
-        const targetTotalWeight = currentTotalWeight + delta;
-        if (targetTotalWeight > maxTotal) {
-          isAllowed = false;
-          errorMsg = `Limit reached: Max ${maxTotal}kg total order weight.`;
-          return prev;
-        }
+    setCart(prev => prev.map(i => {
+      if (i.id === itemId) {
+        const newQty = i.qty + delta;
+        return newQty > 0 ? { ...i, qty: newQty } : i;
       }
-
-      return prev.map(i => i.id === itemId ? { ...i, qty: newQty } : i);
-    });
-
-    if (!isAllowed) {
-      showNotification(errorMsg);
-    }
+      return i;
+    }));
   };
 
   const removeFromCart = (itemId: number) => {
@@ -214,10 +160,12 @@ function App() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {notification && <div className="fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-2xl animate-bounce z-50 font-bold tracking-wide border border-red-400">{notification}</div>}
-        {view === 'customer' ? <CustomerView stock={stock} addToCart={addToCart} config={config} /> : <AdminDashboard stock={stock} orders={orders} config={config} refreshData={refreshData} notify={showNotification} promptConfirm={promptConfirm} />}
+        {view === 'customer' ? <CustomerView stock={stock} onAddToCart={(item: any) => setPickerItem(item)} config={config} /> : <AdminDashboard stock={stock} orders={orders} config={config} refreshData={refreshData} notify={showNotification} promptConfirm={promptConfirm} />}
       </main>
 
       {showCartModal && <CartModal cart={cart} config={config} onClose={() => setShowCartModal(false)} onRemove={removeFromCart} onUpdateQty={updateCartQty} onSubmit={submitOrder} />}
+
+      {pickerItem && <QuantityPicker item={pickerItem} onConfirm={addToCart} onClose={() => setPickerItem(null)} />}
 
       {showAdminLogin && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">

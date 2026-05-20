@@ -12,9 +12,7 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
             setSettingsForm({
                 finalDepositDate: config.finalDepositDate || '',
                 cookDay: config.cookDay || '',
-                payIdInfo: config.payIdInfo || '',
-                maxTotalWeight: config.maxTotalWeight !== undefined && config.maxTotalWeight !== null ? config.maxTotalWeight : 100,
-                maxItemWeight: config.maxItemWeight !== undefined && config.maxItemWeight !== null ? config.maxItemWeight : 50
+                payIdInfo: config.payIdInfo || ''
             });
         }
     }, [config, settingsForm]);
@@ -230,28 +228,6 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
                                     />
                                 </div>
 
-                                <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest border-b border-stone-800 pt-4 pb-2">Order Limits</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Max Total Order (kg)</label>
-                                        <input 
-                                            type="number" 
-                                            value={settingsForm.maxTotalWeight} 
-                                            onChange={(e) => setSettingsForm({ ...settingsForm, maxTotalWeight: parseFloat(e.target.value) || 0 })}
-                                            className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Max Per Item (kg)</label>
-                                        <input 
-                                            type="number" 
-                                            value={settingsForm.maxItemWeight} 
-                                            onChange={(e) => setSettingsForm({ ...settingsForm, maxItemWeight: parseFloat(e.target.value) || 0 })}
-                                            className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
-                                        />
-                                    </div>
-                                </div>
-
                                 <button 
                                     onClick={handleSaveSettings} 
                                     className="w-full bg-red-700 hover:bg-red-600 text-white font-bold py-3.5 rounded-lg transition-colors uppercase tracking-widest text-xs font-black shadow-lg shadow-red-900/20 active:scale-[0.98]"
@@ -295,7 +271,8 @@ function AdminStockItem({ item, onUpdate, onDelete }: any) {
                 bulk1Threshold: item.bulk1Threshold || 0,
                 bulk1Price: item.bulk1Price || 0,
                 bulk2Threshold: item.bulk2Threshold || 0,
-                bulk2Price: item.bulk2Price || 0
+                bulk2Price: item.bulk2Price || 0,
+                maxStock: item.maxStock ?? ''
             });
         }
     }, [item, isEditing]);
@@ -307,7 +284,8 @@ function AdminStockItem({ item, onUpdate, onDelete }: any) {
             bulk1Threshold: parseFloat(editData.bulk1Threshold),
             bulk1Price: parseFloat(editData.bulk1Price),
             bulk2Threshold: parseFloat(editData.bulk2Threshold),
-            bulk2Price: parseFloat(editData.bulk2Price)
+            bulk2Price: parseFloat(editData.bulk2Price),
+            maxStock: editData.maxStock !== '' && editData.maxStock !== null ? parseFloat(editData.maxStock) : null
         });
         setIsEditing(false);
     };
@@ -346,6 +324,12 @@ function AdminStockItem({ item, onUpdate, onDelete }: any) {
                     <span className="bg-stone-900 px-2 py-1 rounded">Standard: <b className="text-stone-300">${item.price}/{item.unit}</b></span>
                     {item.bulk1Threshold > 0 && <span className="bg-stone-900 px-2 py-1 rounded text-yellow-600">Tier 1: <b className="text-yellow-500">${item.bulk1Price}</b> @ {item.bulk1Threshold}{item.unit}+</span>}
                     {item.bulk2Threshold > 0 && <span className="bg-stone-900 px-2 py-1 rounded text-green-600">Tier 2: <b className="text-green-500">${item.bulk2Price}</b> @ {item.bulk2Threshold}{item.unit}+</span>}
+                    {item.maxStock !== null && item.maxStock !== undefined && (
+                        <span className="bg-stone-900 px-2 py-1 rounded text-blue-400">
+                            Stock: <b className="text-blue-300">{item.orderedQty || 0}/{item.maxStock}{item.unit}</b> ordered
+                            {' · '}<b className={item.remainingStock <= 0 ? 'text-red-400' : 'text-green-400'}>{item.remainingStock ?? 0}{item.unit} left</b>
+                        </span>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-stone-900 p-3 rounded border border-stone-700">
@@ -355,6 +339,8 @@ function AdminStockItem({ item, onUpdate, onDelete }: any) {
                         <input type="number" value={editData.price} onChange={e => setEditData({ ...editData, price: e.target.value })} className="w-full bg-black text-white border border-stone-700 rounded px-2 py-1 text-sm" />
                         <label className="block text-[10px] text-stone-500">Unit (kg/ea)</label>
                         <input type="text" value={editData.unit} onChange={e => setEditData({ ...editData, unit: e.target.value })} className="w-full bg-black text-white border border-stone-700 rounded px-2 py-1 text-sm" />
+                        <label className="block text-[10px] text-stone-500">Stock Limit ({editData.unit}) — leave blank for unlimited</label>
+                        <input type="number" value={editData.maxStock} onChange={e => setEditData({ ...editData, maxStock: e.target.value })} placeholder="Unlimited" className="w-full bg-black text-white border border-stone-700 rounded px-2 py-1 text-sm" />
                     </div>
                     <div className="space-y-2 border-l border-stone-800 pl-4">
                         <p className="text-xs font-bold text-yellow-500 uppercase">Tier 1 Bulk</p>
