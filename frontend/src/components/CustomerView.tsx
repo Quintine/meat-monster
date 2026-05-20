@@ -1,18 +1,5 @@
 import { Icons } from './Icons';
 
-interface StockItem {
-    id: number;
-    name: string;
-    category: string;
-    price: number;
-    unit: string;
-    available: boolean;
-    description: string;
-    bulk1Threshold: number;
-    bulk1Price: number;
-    bulk2Threshold: number;
-    bulk2Price: number;
-}
 
 function StockCard({ item, onAdd, disabled }: { item: any, onAdd?: () => void, disabled?: boolean }) {
     const hasTier1 = item.bulk1Threshold > 0 && item.bulk1Price > 0;
