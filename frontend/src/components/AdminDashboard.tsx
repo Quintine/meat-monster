@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { API } from '../services/api';
 
-export default function AdminDashboard({ stock, orders, refreshData, notify, promptConfirm }: any) {
+export default function AdminDashboard({ stock, orders, config, refreshData, notify, promptConfirm }: any) {
     const [tab, setTab] = useState<'orders' | 'stock' | 'settings'>('orders');
     const [newAdminCode, setNewAdminCode] = useState('');
 
@@ -189,7 +189,7 @@ export default function AdminDashboard({ stock, orders, refreshData, notify, pro
                                     <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Final Deposit Date</label>
                                     <input 
                                         type="datetime-local" 
-                                        value={stock.config?.finalDepositDate || ''} 
+                                        value={config?.finalDepositDate || ''} 
                                         onChange={(e) => API.updateConfig({ finalDepositDate: e.target.value }).then(refreshData)}
                                         className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
                                     />
@@ -198,7 +198,7 @@ export default function AdminDashboard({ stock, orders, refreshData, notify, pro
                                     <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Scheduled Cook Day</label>
                                     <input 
                                         type="date" 
-                                        value={stock.config?.cookDay || ''} 
+                                        value={config?.cookDay || ''} 
                                         onChange={(e) => API.updateConfig({ cookDay: e.target.value }).then(refreshData)}
                                         className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
                                     />
@@ -209,7 +209,7 @@ export default function AdminDashboard({ stock, orders, refreshData, notify, pro
                                 <input 
                                     type="text" 
                                     placeholder="e.g. 0400 000 000 or email@domain.com"
-                                    value={stock.config?.payIdInfo || ''} 
+                                    value={config?.payIdInfo || ''} 
                                     onChange={(e) => API.updateConfig({ payIdInfo: e.target.value }).then(refreshData)}
                                     className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
                                 />

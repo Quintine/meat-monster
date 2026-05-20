@@ -158,7 +158,7 @@ function App() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {notification && <div className="fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-2xl animate-bounce z-50 font-bold tracking-wide border border-red-400">{notification}</div>}
-        {view === 'customer' ? <CustomerView stock={stock} addToCart={addToCart} config={config} /> : <AdminDashboard stock={stock} orders={orders} refreshData={refreshData} notify={showNotification} promptConfirm={promptConfirm} />}
+        {view === 'customer' ? <CustomerView stock={stock} addToCart={addToCart} config={config} /> : <AdminDashboard stock={stock} orders={orders} config={config} refreshData={refreshData} notify={showNotification} promptConfirm={promptConfirm} />}
       </main>
 
       {showCartModal && <CartModal cart={cart} config={config} onClose={() => setShowCartModal(false)} onRemove={removeFromCart} onUpdateQty={updateCartQty} onSubmit={submitOrder} />}
