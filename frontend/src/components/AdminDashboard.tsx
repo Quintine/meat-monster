@@ -296,11 +296,13 @@ function AdminStockItem({ item, onUpdate, onDelete }: any) {
                 <div className="flex items-center gap-3 flex-1">
                     {!isEditing ? (
                         <div className="flex-1">
+                            <span className="text-[10px] font-bold text-stone-500 uppercase tracking-[0.15em] border border-stone-800 px-2 py-0.5 rounded bg-stone-900 inline-block mb-1">{item.category}</span>
                             <p className="font-bold text-white text-lg">{item.name}</p>
                             <p className="text-xs text-stone-500 italic">{item.description}</p>
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col gap-2 mr-4">
+                            <input type="text" value={editData.category} onChange={e => setEditData({ ...editData, category: e.target.value })} className="bg-black text-stone-500 border border-stone-700 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest w-32" placeholder="Meat Type (e.g. Beef)" />
                             <input type="text" value={editData.name} onChange={e => setEditData({ ...editData, name: e.target.value })} className="bg-black text-white border border-stone-700 rounded px-2 py-1 font-bold w-full" placeholder="Item Name" />
                             <textarea value={editData.description} onChange={e => setEditData({ ...editData, description: e.target.value })} className="bg-black text-stone-400 border border-stone-700 rounded px-2 py-1 text-xs w-full h-16" placeholder="Description" />
                         </div>
