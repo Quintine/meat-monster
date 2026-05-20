@@ -9,6 +9,8 @@ RUN npm run build
 # --- Build Backend ---
 FROM node:20-alpine AS backend-builder
 WORKDIR /app/backend
+# Install build dependencies for native modules (better-sqlite3)
+RUN apk add --no-cache python3 make g++
 COPY backend/package*.json ./
 RUN npm install
 COPY backend/ ./
