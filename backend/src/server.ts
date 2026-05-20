@@ -38,11 +38,12 @@ app.get('/api/data', async (req, res) => {
     for (const item of stock) {
       if (item.maxStock !== null && item.maxStock !== undefined) {
         const ordered = orderedQtyById[item.id] || 0;
-        const shouldBeAvailable = ordered < item.maxStock;
-        if (item.available !== shouldBeAvailable) {
+        const isOutOfStock = ordered >= item.maxStock;
+        // Only auto-disable if it's currently marked as available but is actually out of stock
+        if (isOutOfStock && item.available) {
           await prisma.stockItem.update({
             where: { id: item.id },
-            data: { available: shouldBeAvailable }
+            data: { available: false }
           });
         }
       }
@@ -60,10 +61,28 @@ app.get('/api/data', async (req, res) => {
         : null
     }));
 
-    res.json({ stock: stockWithRemaining, orders: parsedOrders, config });
+    // Security: Don't send the admin code to the client
+    const configResponse = config ? { ...config, adminCode: undefined } : null;
+
+    res.json({ stock: stockWithRemaining, orders: parsedOrders, config: configResponse });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch data' });
+  }
+});
+
+// Admin Login
+app.post('/api/login', async (req, res) => {
+  try {
+    const { code } = req.body;
+    const config = await prisma.config.findFirst();
+    if (config && config.adminCode === code) {
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ error: 'Invalid admin code' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
@@ -72,26 +91,71 @@ app.post('/api/orders', async (req, res) => {
   try {
     const { name, phone, items, totalWeight, estimatedTotal } = req.body;
     
-    // Generate simple order number
-    const lastOrder = await prisma.order.findFirst({ orderBy: { id: 'desc' } });
-    const nextId = (lastOrder?.id || 0) + 1;
-    const orderNumber = `#${nextId + 1000}`;
+    // 1. Validate Stock Availability
+    const stockItems = await prisma.stockItem.findMany();
+    const allOrders = await prisma.order.findMany();
+    
+    const orderedQtyById: Record<number, number> = {};
+    for (const order of allOrders) {
+      const parsedItems = JSON.parse(order.items);
+      for (const item of parsedItems) {
+        orderedQtyById[item.id] = (orderedQtyById[item.id] || 0) + (item.qty || 0);
+      }
+    }
 
+    let computedTotalWeight = 0;
+    let computedEstimatedTotal = 0;
+
+    for (const item of items) {
+      const dbItem = stockItems.find(s => s.id === item.id);
+      if (!dbItem) throw new Error(`Item ${item.name} not found`);
+      if (!dbItem.available) throw new Error(`Sorry, ${dbItem.name} has just sold out!`);
+      
+      if (dbItem.maxStock !== null && dbItem.maxStock !== undefined) {
+        const alreadyOrdered = orderedQtyById[dbItem.id] || 0;
+        if (alreadyOrdered + item.qty > dbItem.maxStock) {
+          throw new Error(`Not enough stock for ${dbItem.name}. Only ${Math.max(0, dbItem.maxStock - alreadyOrdered)}${dbItem.unit} remaining.`);
+        }
+      }
+
+      // Recalculate prices server-side
+      const getPrice = (stockItem: any, qty: number) => {
+        if (stockItem.bulk2Threshold > 0 && qty >= stockItem.bulk2Threshold && stockItem.bulk2Price > 0) return stockItem.bulk2Price;
+        if (stockItem.bulk1Threshold > 0 && qty >= stockItem.bulk1Threshold && stockItem.bulk1Price > 0) return stockItem.bulk1Price;
+        return stockItem.price;
+      };
+
+      const finalPrice = getPrice(dbItem, item.qty);
+      item.finalPricePerUnit = finalPrice;
+      item.lineTotal = finalPrice * item.qty;
+      
+      computedTotalWeight += item.qty;
+      computedEstimatedTotal += item.lineTotal;
+    }
+
+    // 2. Create the order
     const order = await prisma.order.create({
       data: {
-        orderNumber,
         name,
         phone,
-        totalWeight,
-        estimatedTotal,
+        totalWeight: computedTotalWeight,
+        estimatedTotal: computedEstimatedTotal,
         items: JSON.stringify(items),
         status: 'Pending'
       }
     });
-    res.json(order);
-  } catch (error) {
+
+    // 3. Generate and update order number based on ID (to avoid race conditions)
+    const orderNumber = `#${order.id + 1000}`;
+    const updatedOrder = await prisma.order.update({
+      where: { id: order.id },
+      data: { orderNumber }
+    });
+
+    res.json(updatedOrder);
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to submit order' });
+    res.status(400).json({ error: error.message || 'Failed to submit order' });
   }
 });
 

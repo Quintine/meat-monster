@@ -36,5 +36,14 @@ export const API = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cfg)
     }),
-    resetDB: () => fetch(`${API_BASE}/api/reset`, { method: 'POST' })
+    resetDB: () => fetch(`${API_BASE}/api/reset`, { method: 'POST' }),
+    login: async (code: string) => {
+        const res = await fetch(`${API_BASE}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        if (!res.ok) throw new Error('Invalid code');
+        return res.json();
+    }
 };

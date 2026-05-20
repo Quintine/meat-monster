@@ -16,16 +16,9 @@ function App() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminCodeInput, setAdminCodeInput] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
-  const [adminCode, setAdminCode] = useState('1234');
   const [config, setConfig] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ show: boolean, message: string, onConfirm: (() => void) | null }>({ show: false, message: '', onConfirm: null });
   const [pickerItem, setPickerItem] = useState<any>(null);
-
-  useEffect(() => {
-    refreshData();
-    const intervalId = setInterval(refreshData, 5000);
-    return () => clearInterval(intervalId);
-  }, []);
 
   const refreshData = async () => {
     try {
@@ -33,7 +26,6 @@ function App() {
       setStock(data.stock);
       setOrders(data.orders.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
       if (data.config) {
-        setAdminCode(data.config.adminCode || '1234');
         setConfig(data.config);
       }
       setIsLoading(false);
@@ -42,6 +34,11 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    refreshData();
+    const intervalId = setInterval(refreshData, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
   const showNotification = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3000);
@@ -110,19 +107,20 @@ function App() {
       refreshData();
       showNotification("Order Request Sent!");
       return order;
-    } catch (error) {
-      showNotification("Error submitting order.");
+    } catch (error: any) {
+      showNotification(error.message || "Error submitting order.");
       throw error;
     }
   };
 
-  const handleAdminLogin = () => {
-    if (adminCodeInput === adminCode) {
+  const handleAdminLogin = async () => {
+    try {
+      await API.login(adminCodeInput);
       setView('admin');
       setShowAdminLogin(false);
       setAdminCodeInput('');
       showNotification("Logged in as Admin");
-    } else {
+    } catch (err) {
       showNotification("Incorrect Admin Code");
     }
   };
