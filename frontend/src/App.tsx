@@ -16,6 +16,7 @@ function App() {
   const [adminCodeInput, setAdminCodeInput] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
   const [adminCode, setAdminCode] = useState('1234');
+  const [config, setConfig] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ show: boolean, message: string, onConfirm: (() => void) | null }>({ show: false, message: '', onConfirm: null });
 
   useEffect(() => {
@@ -29,8 +30,9 @@ function App() {
       const data = await API.fetchData();
       setStock(data.stock);
       setOrders(data.orders.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
-      if (data.config && data.config.adminCode) {
-        setAdminCode(data.config.adminCode);
+      if (data.config) {
+        setAdminCode(data.config.adminCode || '1234');
+        setConfig(data.config);
       }
       setIsLoading(false);
     } catch (err) {
@@ -101,13 +103,14 @@ function App() {
     };
 
     try {
-      await API.submitOrder(orderData);
+      const order = await API.submitOrder(orderData);
       setCart([]);
-      setShowCartModal(false);
       refreshData();
-      showNotification("Order Request Sent! We'll contact you.");
+      showNotification("Order Request Sent!");
+      return order;
     } catch (error) {
       showNotification("Error submitting order.");
+      throw error;
     }
   };
 
@@ -155,10 +158,10 @@ function App() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {notification && <div className="fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-2xl animate-bounce z-50 font-bold tracking-wide border border-red-400">{notification}</div>}
-        {view === 'customer' ? <CustomerView stock={stock} addToCart={addToCart} /> : <AdminDashboard stock={stock} orders={orders} refreshData={refreshData} notify={showNotification} promptConfirm={promptConfirm} />}
+        {view === 'customer' ? <CustomerView stock={stock} addToCart={addToCart} config={config} /> : <AdminDashboard stock={stock} orders={orders} refreshData={refreshData} notify={showNotification} promptConfirm={promptConfirm} />}
       </main>
 
-      {showCartModal && <CartModal cart={cart} onClose={() => setShowCartModal(false)} onRemove={removeFromCart} onUpdateQty={updateCartQty} onSubmit={submitOrder} />}
+      {showCartModal && <CartModal cart={cart} config={config} onClose={() => setShowCartModal(false)} onRemove={removeFromCart} onUpdateQty={updateCartQty} onSubmit={submitOrder} />}
 
       {showAdminLogin && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">

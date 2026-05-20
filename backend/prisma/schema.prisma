@@ -25,16 +25,21 @@ model StockItem {
 }
 
 model Order {
-  id              Int      @id @default(autoincrement())
-  name            String
-  phone           String
-  totalWeight     Float
-  estimatedTotal  Float
-  timestamp       DateTime @default(now())
-  items           String   // Storing items as a JSON string for simplicity with SQLite
+  id             Int      @id @default(autoincrement())
+  orderNumber    String?
+  name           String
+  phone          String
+  items          String
+  totalWeight    Float
+  estimatedTotal Float
+  status         String   @default("Pending")
+  timestamp      DateTime @default(now())
 }
 
 model Config {
-  id              Int      @id @default(autoincrement())
-  adminCode       String   @default("1234")
+  id               Int      @id @default(1)
+  adminCode        String   @default("1234")
+  finalDepositDate String?
+  cookDay          String?
+  payIdInfo        String?  @default("Your PayID Here")
 }

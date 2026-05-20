@@ -65,9 +65,22 @@ function StockCard({ item, onAdd, disabled }: { item: StockItem, onAdd?: () => v
     );
 }
 
-export default function CustomerView({ stock, addToCart }: { stock: StockItem[], addToCart: (item: StockItem) => void }) {
+export default function CustomerView({ stock, addToCart, config }: { stock: StockItem[], addToCart: (item: StockItem) => void, config?: any }) {
     const availableStock = stock.filter(item => item.available);
     const soldOutStock = stock.filter(item => !item.available);
+
+    const formatDate = (d: string) => {
+        if (!d) return 'TBA';
+        try {
+            return new Date(d).toLocaleString('en-AU', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) { return d; }
+    };
 
     return (
         <div className="space-y-8">
@@ -79,14 +92,35 @@ export default function CustomerView({ stock, addToCart }: { stock: StockItem[],
                 </p>
             </div>
 
-            <div className="bg-red-900/10 border border-red-900/40 p-5 rounded-lg flex items-start gap-3 max-w-3xl mx-auto shadow-[0_0_15px_rgba(220,38,38,0.1)]">
-                <div className="text-red-500 mt-1 flex-shrink-0"><Icons.Alert /></div>
-                <div>
-                    <p className="text-red-400 font-bold uppercase tracking-wider text-sm mb-1">Terms of Service</p>
-                    <p className="text-stone-300 text-sm leading-relaxed">
-                        <span className="text-white font-bold underline">Cash payment is required up front</span> before any smoking begins to cover material costs. 
-                        Delivery or pickup options can be negotiated directly with us after your request is confirmed.
-                    </p>
+            <div className="bg-red-900/10 border border-red-900/40 p-6 rounded-xl flex items-start gap-4 max-w-4xl mx-auto shadow-[0_0_25px_rgba(220,38,38,0.1)] relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-1 h-full bg-red-600"></div>
+                <div className="text-red-500 mt-1 flex-shrink-0 text-2xl"><Icons.Alert /></div>
+                <div className="space-y-4">
+                    <div>
+                        <p className="text-red-500 font-black uppercase tracking-widest text-sm mb-2 flex items-center gap-2">
+                            Terms of Service & Ordering Policy
+                        </p>
+                        <p className="text-stone-300 text-sm leading-relaxed">
+                            To secure your order, a <span className="text-white font-bold underline">30% non-refundable deposit</span> is required upfront before smoking begins. 
+                            Payments can be made via <span className="text-red-400 font-bold">PayID</span> or <span className="text-red-400 font-bold">Cash</span>.
+                            The remaining balance is payable upon pickup or delivery.
+                        </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="bg-stone-950/50 border border-stone-800 p-3 rounded-lg">
+                            <p className="text-[10px] text-stone-500 uppercase font-black mb-1">Final Deposit Deadline</p>
+                            <p className="text-white font-mono font-bold">{config?.finalDepositDate ? formatDate(config.finalDepositDate) : 'TBA'}</p>
+                        </div>
+                        <div className="bg-stone-950/50 border border-stone-800 p-3 rounded-lg">
+                            <p className="text-[10px] text-stone-500 uppercase font-black mb-1">Scheduled Cook Day</p>
+                            <p className="text-red-500 font-mono font-bold uppercase tracking-tighter text-lg">{config?.cookDay ? new Date(config.cookDay).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' }) : 'TBA'}</p>
+                        </div>
+                    </div>
+
+                    <div className="text-[10px] text-stone-500 italic flex items-center gap-1">
+                        <Icons.Check /> Deposits cover material costs and are final. PayID details provided after ordering.
+                    </div>
                 </div>
             </div>
 

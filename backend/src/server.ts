@@ -36,19 +36,43 @@ app.get('/api/data', async (req, res) => {
 app.post('/api/orders', async (req, res) => {
   try {
     const { name, phone, items, totalWeight, estimatedTotal } = req.body;
+    
+    // Generate simple order number
+    const lastOrder = await prisma.order.findFirst({ orderBy: { id: 'desc' } });
+    const nextId = (lastOrder?.id || 0) + 1;
+    const orderNumber = `#${nextId + 1000}`;
+
     const order = await prisma.order.create({
       data: {
+        orderNumber,
         name,
         phone,
         totalWeight,
         estimatedTotal,
-        items: JSON.stringify(items)
+        items: JSON.stringify(items),
+        status: 'Pending'
       }
     });
     res.json(order);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to submit order' });
+  }
+});
+
+// Update Order Status
+app.patch('/api/orders/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const order = await prisma.order.update({
+      where: { id: parseInt(id) },
+      data: { status }
+    });
+    res.json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update order status' });
   }
 });
 
@@ -113,15 +137,21 @@ app.delete('/api/stock/:id', async (req, res) => {
 // Update Config
 app.post('/api/config', async (req, res) => {
   try {
-    const { adminCode } = req.body;
+    const { adminCode, finalDepositDate, cookDay, payIdInfo } = req.body;
     const config = await prisma.config.findFirst();
+    const data: any = {};
+    if (adminCode !== undefined) data.adminCode = adminCode;
+    if (finalDepositDate !== undefined) data.finalDepositDate = finalDepositDate;
+    if (cookDay !== undefined) data.cookDay = cookDay;
+    if (payIdInfo !== undefined) data.payIdInfo = payIdInfo;
+
     if (config) {
       await prisma.config.update({
         where: { id: config.id },
-        data: { adminCode }
+        data
       });
     } else {
-      await prisma.config.create({ data: { adminCode } });
+      await prisma.config.create({ data });
     }
     res.sendStatus(200);
   } catch (error) {

@@ -13,9 +13,11 @@ interface CartItem {
     bulk2Price: number;
 }
 
-export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubmit }: { cart: CartItem[], onClose: () => void, onRemove: (id: number) => void, onUpdateQty: (id: number, delta: number) => void, onSubmit: (name: string, phone: string) => void }) {
+export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubmit, config }: { cart: CartItem[], onClose: () => void, onRemove: (id: number) => void, onUpdateQty: (id: number, delta: number) => void, onSubmit: (name: string, phone: string) => Promise<any>, config?: any }) {
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submittedOrder, setSubmittedOrder] = useState<any>(null);
 
     const getPrice = (item: CartItem, qty: number) => {
         if (item.bulk2Threshold > 0 && qty >= item.bulk2Threshold && item.bulk2Price > 0) return item.bulk2Price;
@@ -29,6 +31,60 @@ export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubm
     }, 0);
 
     const totalWeight = cart.reduce((acc, i) => acc + i.qty, 0);
+    const depositAmount = total * 0.3;
+
+    const handleSubmit = async () => {
+        if (!name || !phone) return;
+        setIsSubmitting(true);
+        try {
+            const order = await onSubmit(name, phone);
+            setSubmittedOrder(order);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (submittedOrder) {
+        return (
+            <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 z-50">
+                <div className="bg-[#1c1917] border border-stone-700 w-full max-w-md rounded-2xl shadow-[0_0_50px_rgba(220,38,38,0.2)] overflow-hidden flex flex-col">
+                    <div className="p-8 text-center space-y-6">
+                        <div className="bg-green-900/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto border border-green-500/50 text-green-500 text-4xl animate-bounce">
+                            <Icons.Check />
+                        </div>
+                        <div>
+                            <h2 className="text-3xl font-black italic text-white uppercase mb-2">Order Received!</h2>
+                            <p className="text-stone-400 font-mono tracking-tighter text-lg font-bold">ID: {submittedOrder.orderNumber}</p>
+                        </div>
+
+                        <div className="bg-stone-950 p-6 rounded-xl border border-stone-800 space-y-4 text-left">
+                            <h3 className="text-red-500 font-black uppercase text-xs tracking-widest border-b border-stone-800 pb-2">Payment Instructions</h3>
+                            <div className="space-y-4">
+                                <div className="flex gap-3">
+                                    <div className="text-stone-500 mt-1"><Icons.Alert /></div>
+                                    <p className="text-sm text-stone-300">A <span className="text-white font-bold">30% deposit of ${depositAmount.toFixed(2)}</span> is required before we start the smoker.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-xs font-bold text-stone-500 uppercase">Option 1: PayID (Instant)</p>
+                                    <div className="bg-stone-900 p-3 rounded border border-red-900/30 text-white font-mono flex justify-between items-center group">
+                                        <span>{config?.payIdInfo || '0400 000 000'}</span>
+                                        <span className="text-[8px] uppercase bg-red-900/50 px-1 rounded text-red-400">Copy</span>
+                                    </div>
+                                    <p className="text-[10px] text-stone-500 italic">Please use "{submittedOrder.orderNumber}" as the payment description.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-xs font-bold text-stone-500 uppercase">Option 2: Cash Deposit</p>
+                                    <p className="text-sm text-stone-300">Contact us via the phone number provided to arrange a cash drop-off.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onClick={onClose} className="w-full bg-stone-800 hover:bg-stone-700 text-white font-black uppercase py-4 rounded-xl transition-all">Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -97,14 +153,20 @@ export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubm
 
                 {cart.length > 0 && (
                     <div className="p-6 bg-[#0c0a09] border-t border-stone-800">
-                        <div className="flex justify-between mb-6 text-xl font-bold">
-                            <span className="text-stone-400">Total Est. ({totalWeight}kg)</span>
-                            <span className="text-red-500 text-2xl">${total.toFixed(2)}</span>
+                        <div className="space-y-2 mb-6">
+                            <div className="flex justify-between text-stone-400 font-bold">
+                                <span>Total Est. ({totalWeight}kg)</span>
+                                <span>${total.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-red-500 text-2xl font-black italic uppercase tracking-tighter">
+                                <span>30% Deposit Due</span>
+                                <span>${depositAmount.toFixed(2)}</span>
+                            </div>
                         </div>
                         <div className="space-y-4">
                             <div className="text-xs bg-stone-950 p-3 rounded border border-stone-800 text-stone-400">
-                                <p className="font-bold text-red-500 mb-1 uppercase">Payment Required</p>
-                                <p>By submitting, you agree to pay upfront via cash. Delivery/Pickup will be negotiated upon confirmation.</p>
+                                <p className="font-bold text-red-500 mb-1 uppercase tracking-widest">Deposit Required</p>
+                                <p>Order will not be cooked until the 30% deposit is paid. We accept PayID and Cash.</p>
                             </div>
                             <div className="space-y-3">
                                 <div>
@@ -116,7 +178,13 @@ export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubm
                                     <input type="tel" required placeholder="0400 000 000" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-stone-900 border border-stone-700 rounded-lg p-4 text-white focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all" />
                                 </div>
                             </div>
-                            <button onClick={() => onSubmit(name, phone)} disabled={!name || !phone} className="w-full bg-red-700 hover:bg-red-600 disabled:bg-stone-800 disabled:text-stone-600 text-white font-black uppercase tracking-widest py-4 rounded-lg transition-all shadow-lg shadow-red-900/20 active:scale-[0.98]">Submit Order</button>
+                            <button 
+                                onClick={handleSubmit} 
+                                disabled={!name || !phone || isSubmitting} 
+                                className="w-full bg-red-700 hover:bg-red-600 disabled:bg-stone-800 disabled:text-stone-600 text-white font-black uppercase tracking-widest py-4 rounded-lg transition-all shadow-lg shadow-red-900/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                            >
+                                {isSubmitting ? 'Sending Request...' : 'Submit Order'}
+                            </button>
                         </div>
                     </div>
                 )}

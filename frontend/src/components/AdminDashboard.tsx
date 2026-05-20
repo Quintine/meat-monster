@@ -130,25 +130,45 @@ export default function AdminDashboard({ stock, orders, refreshData, notify, pro
                                     <div key={order.id} className="bg-stone-950 p-5 rounded-lg border border-stone-800 relative group hover:border-stone-700 transition-colors shadow-md">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
-                                                <h4 className="font-bold text-lg text-red-400">{order.name}</h4>
-                                                <p className="text-sm text-stone-300 font-mono mb-1">{order.phone}</p>
-                                                <p className="text-xs text-stone-500">{new Date(order.timestamp).toLocaleString()}</p>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-[10px] font-black bg-red-900/30 text-red-500 px-2 py-0.5 rounded border border-red-900/50 uppercase tracking-tighter">{order.orderNumber || `#${order.id}`}</span>
+                                                    <h4 className="font-bold text-lg text-white">{order.name}</h4>
+                                                </div>
+                                                <p className="text-sm text-stone-300 font-mono">{order.phone}</p>
                                             </div>
-                                            <button onClick={() => deleteOrder(order.id)} className="text-stone-600 hover:text-red-500 transition-colors bg-stone-900 p-2 rounded"><Icons.Trash /></button>
+                                            <div className="flex gap-2">
+                                                <select 
+                                                    value={order.status || 'Pending'}
+                                                    onChange={(e) => API.updateOrderStatus(order.id, e.target.value).then(refreshData)}
+                                                    className="bg-stone-900 border border-stone-800 rounded px-2 py-1 text-xs text-stone-400 focus:border-red-600 outline-none"
+                                                >
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="Deposit Paid">Deposit Paid</option>
+                                                    <option value="Paid">Paid</option>
+                                                    <option value="Cooked">Cooked</option>
+                                                    <option value="Completed">Completed</option>
+                                                    <option value="Cancelled">Cancelled</option>
+                                                </select>
+                                                <button onClick={() => promptConfirm(`Delete order ${order.orderNumber || order.name}?`, () => API.deleteOrder(order.id).then(refreshData))} className="p-2 text-stone-600 hover:text-red-500 transition-colors bg-stone-900 rounded"><Icons.Trash /></button>
+                                            </div>
                                         </div>
-                                        <div className="bg-stone-900 rounded p-3 border border-stone-800/50">
+                                        <div className="bg-stone-900 rounded p-3 border border-stone-800/50 mb-4">
                                             {order.items.map((item: any, idx: number) => (
-                                                <div key={idx} className="flex justify-between text-sm py-2 border-b border-stone-800 last:border-0">
-                                                    <div>
-                                                        <span className="text-stone-300 font-bold block">{item.name}</span>
-                                                        <span className="text-stone-500 text-xs">{item.qty}{item.unit} @ ${item.finalPricePerUnit || item.price}/{item.unit}</span>
-                                                    </div>
-                                                    <span className="text-stone-400 font-mono">${(item.lineTotal || 0).toFixed(2)}</span>
+                                                <div key={idx} className="flex justify-between text-sm py-1 border-b border-stone-800/30 last:border-0">
+                                                    <span className="text-stone-300">{item.qty}{item.unit} {item.name}</span>
+                                                    <span className="text-stone-500 font-mono">${(item.lineTotal || 0).toFixed(2)}</span>
                                                 </div>
                                             ))}
-                                            <div className="flex justify-between mt-3 pt-3 border-t border-stone-800 font-bold">
-                                                <span className="text-white">Total Est.</span>
-                                                <span className="text-red-500">${order.estimatedTotal?.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-end">
+                                            <div className="text-[10px] text-stone-500 space-y-1">
+                                                <p className="flex items-center gap-1 uppercase font-bold"><Icons.Clock /> {new Date(order.timestamp).toLocaleString('en-AU')}</p>
+                                                <p className="flex items-center gap-1 uppercase font-bold"><Icons.ShoppingCart /> {order.totalWeight}kg Weight</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] text-stone-500 uppercase font-bold">Estimated Total</p>
+                                                <p className="text-xl font-black text-red-500">${order.estimatedTotal?.toFixed(2)}</p>
+                                                <p className="text-[10px] text-red-800 font-bold uppercase tracking-tighter">30% Deposit: ${(order.estimatedTotal * 0.3).toFixed(2)}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -162,6 +182,40 @@ export default function AdminDashboard({ stock, orders, refreshData, notify, pro
                     <div className="max-w-md mx-auto text-center pt-10">
                         <div className="text-stone-500 mb-4 mx-auto flex justify-center"><Icons.Settings /></div>
                         <h3 className="text-xl font-bold text-white mb-6">Admin Settings</h3>
+                        <div className="bg-stone-950 p-6 rounded-xl border border-stone-800 mb-8 space-y-6 text-left">
+                            <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest border-b border-stone-800 pb-2">Scheduling & Deadlines</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Final Deposit Date</label>
+                                    <input 
+                                        type="datetime-local" 
+                                        value={stock.config?.finalDepositDate || ''} 
+                                        onChange={(e) => API.updateConfig({ finalDepositDate: e.target.value }).then(refreshData)}
+                                        className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Scheduled Cook Day</label>
+                                    <input 
+                                        type="date" 
+                                        value={stock.config?.cookDay || ''} 
+                                        onChange={(e) => API.updateConfig({ cookDay: e.target.value }).then(refreshData)}
+                                        className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-stone-500 uppercase mb-2">PayID Details</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. 0400 000 000 or email@domain.com"
+                                    value={stock.config?.payIdInfo || ''} 
+                                    onChange={(e) => API.updateConfig({ payIdInfo: e.target.value }).then(refreshData)}
+                                    className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
+                                />
+                            </div>
+                        </div>
+
                         <div className="bg-stone-950 p-6 rounded-xl border border-stone-800 mb-8">
                             <label className="block text-xs font-bold text-stone-500 uppercase mb-2 text-left">Update Admin Password</label>
                             <input type="text" placeholder="New Code" value={newAdminCode} onChange={(e) => setNewAdminCode(e.target.value)} className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white mb-4 focus:border-red-600 outline-none" />
