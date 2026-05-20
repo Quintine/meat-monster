@@ -1,34 +1,42 @@
-# Stage 1: Build Frontend
-FROM node:20-slim AS frontend-build
+# --- Build Frontend ---
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
-# Stage 2: Build Backend
-FROM node:20-slim AS backend-build
+# --- Build Backend ---
+FROM node:20-alpine AS backend-builder
 WORKDIR /app/backend
 COPY backend/package*.json ./
 RUN npm install
 COPY backend/ ./
 RUN npx prisma generate
-RUN npm run build || (mkdir -p dist && npx tsc -p tsconfig.json)
+RUN npm run build
 
-# Stage 3: Final Image
-FROM node:20-slim
+# --- Final Image ---
+FROM node:20-alpine
 WORKDIR /app
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-COPY --from=frontend-build /app/frontend/dist ./frontend/dist
-COPY --from=backend-build /app/backend/dist ./backend/dist
-COPY --from=backend-build /app/backend/node_modules ./backend/node_modules
-COPY --from=backend-build /app/backend/prisma ./backend/prisma
-COPY --from=backend-build /app/backend/package*.json ./backend/
+# Copy backend
+COPY --from=backend-builder /app/backend/package*.json ./
+COPY --from=backend-builder /app/backend/dist ./dist
+COPY --from=backend-builder /app/backend/prisma ./prisma
+COPY --from=backend-builder /app/backend/node_modules ./node_modules
 
-WORKDIR /app/backend
+# Copy frontend build to be served by backend
+COPY --from=frontend-builder /app/frontend/dist ./frontend-dist
+
+# Env vars
 ENV NODE_ENV=production
+ENV PORT=3000
+ENV DATABASE_URL="file:/app/data/dev.db"
+
+# Create data directory for SQLite
+RUN mkdir -p /app/data
+
 EXPOSE 3000
 
-# Script to run migrations and start server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# Start script
+CMD ["sh", "-c", "npx prisma db push && node dist/server.js"]

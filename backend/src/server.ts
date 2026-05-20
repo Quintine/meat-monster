@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
+import fs from 'fs';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -186,7 +187,10 @@ app.post('/api/reset', async (req, res) => {
 });
 
 // Serve Static Files in Production
-const frontendPath = path.join(__dirname, '../../frontend/dist');
+const frontendPath = fs.existsSync(path.join(__dirname, '../frontend-dist'))
+  ? path.join(__dirname, '../frontend-dist')
+  : path.join(__dirname, '../../frontend/dist');
+
 app.use(express.static(frontendPath));
 
 app.get(/^\/(?!api).*/, (req, res) => {
