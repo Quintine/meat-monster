@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { API } from '../services/api';
 
@@ -21,13 +21,6 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
         refreshData();
     };
 
-    const deleteOrder = (id: number) => {
-        promptConfirm("Delete this order record?", async () => {
-            await API.deleteOrder(id);
-            refreshData();
-            notify("Order Deleted");
-        });
-    };
 
     const addNewStockItem = async () => {
         const newItem = {

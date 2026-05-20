@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { API } from './services/api';
 import { Icons } from './components/Icons';
 import CustomerView from './components/CustomerView';

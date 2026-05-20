@@ -1,4 +1,3 @@
-import React from 'react';
 
 export const Icons = {
     Beast: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8"><path d="M12 2a5 5 0 0 0-5 5v2a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"/><path d="M12 14a5 5 0 0 0-5 5v2h10v-2a5 5 0 0 0-5-5z"/><path d="M8 7h8"/><path d="M12 2v5"/></svg>,
