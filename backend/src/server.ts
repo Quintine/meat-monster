@@ -159,8 +159,7 @@ app.post('/api/reset', async (req, res) => {
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
 
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) return;
+app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
