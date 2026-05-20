@@ -137,7 +137,7 @@ app.delete('/api/orders', async (req, res) => {
 // Update or Create Stock Item
 app.post('/api/stock', async (req, res) => {
   try {
-    const item = req.body;
+    const { orderedQty, remainingStock, ...item } = req.body; // strip virtual fields
     if (item.id) {
       const updated = await prisma.stockItem.update({
         where: { id: item.id },
