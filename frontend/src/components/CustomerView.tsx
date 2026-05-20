@@ -116,7 +116,7 @@ export default function CustomerView({ stock, onAddToCart, config }: { stock: an
                         <p className="text-stone-300 text-sm leading-relaxed">
                             To secure your order, a <span className="text-white font-bold underline">30% non-refundable deposit</span> is required upfront before smoking begins. 
                             Payments can be made via <span className="text-red-400 font-bold">PayID</span> or <span className="text-red-400 font-bold">Cash</span>.
-                            The remaining balance is payable upon pickup or delivery.
+                            The remaining balance is payable upon pickup.
                         </p>
                     </div>
                     
