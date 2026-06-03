@@ -13,12 +13,13 @@ app.use(express.json());
 
 // API Routes
 
-// Fetch all data (Stock, Orders, Config)
+// Fetch all data (Stock, Orders, Config, FAQs)
 app.get('/api/data', async (req, res) => {
   try {
     let stock = await prisma.stockItem.findMany();
     const orders = await prisma.order.findMany();
     const config = await prisma.config.findFirst();
+    const faqs = await prisma.fAQ.findMany({ orderBy: { order: 'asc' } });
     
     // Parse order items from string to JSON
     const parsedOrders = orders.map(order => ({
@@ -64,7 +65,7 @@ app.get('/api/data', async (req, res) => {
     // Security: Don't send the admin code to the client
     const configResponse = config ? { ...config, adminCode: undefined } : null;
 
-    res.json({ stock: stockWithRemaining, orders: parsedOrders, config: configResponse });
+    res.json({ stock: stockWithRemaining, orders: parsedOrders, config: configResponse, faqs });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch data' });
@@ -75,13 +76,17 @@ app.get('/api/data', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { code } = req.body;
+    console.log(`Login attempt with code: ${code}`);
     const config = await prisma.config.findFirst();
     if (config && config.adminCode === code) {
+      console.log('Login successful');
       res.json({ success: true });
     } else {
+      console.log(`Login failed. Expected: ${config?.adminCode}, Got: ${code}`);
       res.status(401).json({ error: 'Invalid admin code' });
     }
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -236,12 +241,15 @@ app.delete('/api/stock/:id', async (req, res) => {
 // Update Config
 app.post('/api/config', async (req, res) => {
   try {
-    const { adminCode, finalDepositDate, cookDay, payIdInfo } = req.body;
+    const { adminCode, finalDepositDate, cookDay, payIdInfo, termsOfService, orderingPolicy, depositPercentage } = req.body;
     const data: any = {};
     if (adminCode !== undefined) data.adminCode = adminCode;
     if (finalDepositDate !== undefined) data.finalDepositDate = finalDepositDate;
     if (cookDay !== undefined) data.cookDay = cookDay;
     if (payIdInfo !== undefined) data.payIdInfo = payIdInfo;
+    if (termsOfService !== undefined) data.termsOfService = termsOfService;
+    if (orderingPolicy !== undefined) data.orderingPolicy = orderingPolicy;
+    if (depositPercentage !== undefined) data.depositPercentage = parseInt(depositPercentage);
 
     // Use upsert to ensure we always use ID 1
     await prisma.config.upsert({
@@ -257,19 +265,58 @@ app.post('/api/config', async (req, res) => {
   }
 });
 
+// Update or Create FAQ Item
+app.post('/api/faqs', async (req, res) => {
+  try {
+    const item = req.body;
+    if (item.id) {
+      const updated = await prisma.fAQ.update({
+        where: { id: item.id },
+        data: {
+          ...item,
+          id: undefined // Don't update ID
+        }
+      });
+      res.json(updated);
+    } else {
+      const created = await prisma.fAQ.create({ data: item });
+      res.json(created);
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update FAQ' });
+  }
+});
+
+// Delete FAQ Item
+app.delete('/api/faqs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.fAQ.delete({ where: { id: parseInt(id) } });
+    res.sendStatus(200);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete FAQ item' });
+  }
+});
+
 // Reset Database to defaults
 app.post('/api/reset', async (req, res) => {
   try {
     await prisma.order.deleteMany();
     await prisma.stockItem.deleteMany();
     await prisma.config.deleteMany();
+    await prisma.fAQ.deleteMany();
     
     // Seed default admin code and limits with ID 1
     await prisma.config.create({ 
       data: { 
         id: 1,
         adminCode: '1234', 
-        payIdInfo: 'Your PayID Here'
+        payIdInfo: 'Your PayID Here',
+        termsOfService: 'To secure your order, a 30% non-refundable deposit is required upfront before smoking begins. Payments can be made via PayID or Cash. The remaining balance is payable upon pickup.',
+        orderingPolicy: 'Deposits cover material costs and are final. PayID details provided after ordering.',
+        depositPercentage: 30
       } 
     });
     
@@ -278,6 +325,14 @@ app.post('/api/reset', async (req, res) => {
       data: [
         { name: 'Beef Brisket', category: 'Beef', price: 45, unit: 'kg', description: 'Low and slow smoked brisket', available: true },
         { name: 'Pork Shoulder', category: 'Pork', price: 35, unit: 'kg', description: 'Pulled pork perfection', available: true }
+      ]
+    });
+
+    // Seed some default FAQs
+    await prisma.fAQ.createMany({
+      data: [
+        { question: 'When is pickup?', answer: 'Pickups are usually scheduled for the afternoon of the Cook Day. We will contact you to confirm the exact time.', order: 1 },
+        { question: 'How do I pay the deposit?', answer: 'Once you submit your order, you can pay the 30% deposit via PayID or Cash.', order: 2 }
       ]
     });
     
@@ -299,6 +354,18 @@ app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  // Ensure a default config exists
+  const config = await prisma.config.findFirst();
+  if (!config) {
+    await prisma.config.create({
+      data: {
+        id: 1,
+        adminCode: '1234',
+        payIdInfo: 'Your PayID Here'
+      }
+    });
+    console.log('Default config seeded');
+  }
   console.log(`Server is running on http://localhost:${PORT}`);
 });

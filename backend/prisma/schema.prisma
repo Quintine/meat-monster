@@ -43,4 +43,14 @@ model Config {
   finalDepositDate String?
   cookDay          String?
   payIdInfo        String?  @default("Your PayID Here")
+  termsOfService   String?  @default("To secure your order, a 30% non-refundable deposit is required upfront before smoking begins. Payments can be made via PayID or Cash. The remaining balance is payable upon pickup.")
+  orderingPolicy   String?  @default("Deposits cover material costs and are final. PayID details provided after ordering.")
+  depositPercentage Int     @default(30)
+}
+
+model FAQ {
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  order     Int      @default(0)
 }

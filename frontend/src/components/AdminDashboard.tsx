@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { API } from '../services/api';
 
-export default function AdminDashboard({ stock, orders, config, refreshData, notify, promptConfirm }: any) {
-    const [tab, setTab] = useState<'orders' | 'stock' | 'settings'>('orders');
+export default function AdminDashboard({ stock, orders, config, faqs, refreshData, notify, promptConfirm }: any) {
+    const [tab, setTab] = useState<'orders' | 'stock' | 'faqs' | 'settings'>('orders');
     const [newAdminCode, setNewAdminCode] = useState('');
     const [settingsForm, setSettingsForm] = useState<any>(null);
 
@@ -12,7 +12,10 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
             setSettingsForm({
                 finalDepositDate: config.finalDepositDate || '',
                 cookDay: config.cookDay || '',
-                payIdInfo: config.payIdInfo || ''
+                payIdInfo: config.payIdInfo || '',
+                termsOfService: config.termsOfService || '',
+                orderingPolicy: config.orderingPolicy || '',
+                depositPercentage: config.depositPercentage || 30
             });
         }
     }, [config, settingsForm]);
@@ -72,6 +75,32 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
         });
     };
 
+    const addNewFAQ = async () => {
+        const newFAQ = {
+            question: "New Question?",
+            answer: "Answer here...",
+            order: faqs.length + 1
+        };
+        await API.updateFAQ(newFAQ);
+        refreshData();
+        notify("New FAQ Added");
+    };
+
+    const updateFAQ = async (id: number, updates: any) => {
+        const currentFAQ = faqs.find((f: any) => f.id === id) || { id };
+        await API.updateFAQ({ ...currentFAQ, ...updates });
+        refreshData();
+        notify("FAQ updated");
+    };
+
+    const deleteFAQ = (id: number) => {
+        promptConfirm("Delete this FAQ?", async () => {
+            await API.deleteFAQ(id);
+            refreshData();
+            notify("FAQ deleted");
+        });
+    };
+
     const clearAllOrders = () => {
         promptConfirm("WARNING: This will delete ALL current order history. Proceed?", async () => {
             await API.clearOrders();
@@ -93,6 +122,7 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
             <div className="flex border-b border-stone-800 bg-stone-950">
                 <button onClick={() => setTab('orders')} className={`flex-1 py-4 font-bold text-center transition-colors uppercase tracking-wider text-sm ${tab === 'orders' ? 'bg-stone-900 text-red-500 border-t-2 border-red-500' : 'text-stone-600 hover:text-stone-300'}`}>Requests</button>
                 <button onClick={() => setTab('stock')} className={`flex-1 py-4 font-bold text-center transition-colors uppercase tracking-wider text-sm ${tab === 'stock' ? 'bg-stone-900 text-red-500 border-t-2 border-red-500' : 'text-stone-600 hover:text-stone-300'}`}>Inventory</button>
+                <button onClick={() => setTab('faqs')} className={`flex-1 py-4 font-bold text-center transition-colors uppercase tracking-wider text-sm ${tab === 'faqs' ? 'bg-stone-900 text-red-500 border-t-2 border-red-500' : 'text-stone-600 hover:text-stone-300'}`}>FAQ</button>
                 <button onClick={() => setTab('settings')} className={`flex-1 py-4 font-bold text-center transition-colors uppercase tracking-wider text-sm ${tab === 'settings' ? 'bg-stone-900 text-red-500 border-t-2 border-red-500' : 'text-stone-600 hover:text-stone-300'}`}>Settings</button>
             </div>
 
@@ -110,6 +140,23 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
                         </div>
                         <div className="flex justify-between items-center pt-10 border-t border-stone-800 mt-10">
                             <button onClick={addNewStockItem} className="bg-stone-800 hover:bg-stone-700 text-white px-4 py-2 rounded font-bold flex items-center gap-2 border border-stone-700"><Icons.Plus /> Add New Stock Item</button>
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'faqs' && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-end border-b border-stone-800 pb-4">
+                            <h3 className="text-xl font-bold text-white">FAQ Management</h3>
+                            <p className="text-xs text-stone-500">Edit frequently asked questions</p>
+                        </div>
+                        <div className="grid gap-4">
+                            {faqs.map((faq: any) => (
+                                <AdminFAQItem key={faq.id} item={faq} onUpdate={(data: any) => updateFAQ(faq.id, data)} onDelete={() => deleteFAQ(faq.id)} />
+                            ))}
+                        </div>
+                        <div className="flex justify-between items-center pt-10 border-t border-stone-800 mt-10">
+                            <button onClick={addNewFAQ} className="bg-stone-800 hover:bg-stone-700 text-white px-4 py-2 rounded font-bold flex items-center gap-2 border border-stone-700"><Icons.Plus /> Add New FAQ</button>
                         </div>
                     </div>
                 )}
@@ -227,6 +274,35 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
                                         className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Deposit Percentage (%)</label>
+                                    <input 
+                                        type="number" 
+                                        min="0"
+                                        max="100"
+                                        value={settingsForm.depositPercentage} 
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, depositPercentage: e.target.value })}
+                                        className="w-32 bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none" 
+                                    />
+                                </div>
+
+                                <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest border-b border-stone-800 pb-2 pt-4">Policies & TOS</h4>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Terms of Service</label>
+                                    <textarea 
+                                        value={settingsForm.termsOfService} 
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, termsOfService: e.target.value })}
+                                        className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none h-24 text-sm" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Ordering Policy Footer</label>
+                                    <textarea 
+                                        value={settingsForm.orderingPolicy} 
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, orderingPolicy: e.target.value })}
+                                        className="w-full bg-stone-900 border border-stone-700 rounded p-3 text-white focus:border-red-600 outline-none h-24 text-sm" 
+                                    />
+                                </div>
 
                                 <button 
                                     onClick={handleSaveSettings} 
@@ -251,6 +327,64 @@ export default function AdminDashboard({ stock, orders, config, refreshData, not
                         </div>
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+function AdminFAQItem({ item, onUpdate, onDelete }: any) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState<any>({});
+
+    useEffect(() => {
+        if (!isEditing) {
+            setEditData({
+                question: item.question || "",
+                answer: item.answer || "",
+                order: item.order || 0
+            });
+        }
+    }, [item, isEditing]);
+
+    const handleSave = () => {
+        onUpdate({
+            ...editData,
+            order: parseInt(editData.order)
+        });
+        setIsEditing(false);
+    };
+
+    return (
+        <div className="bg-stone-950 p-4 rounded-lg border border-stone-800 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1">
+                    {!isEditing ? (
+                        <div className="flex-1">
+                            <p className="font-bold text-white text-lg">{item.question}</p>
+                            <p className="text-sm text-stone-400">{item.answer}</p>
+                            <p className="text-[10px] text-stone-600 mt-2 uppercase font-bold">Display Order: {item.order}</p>
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col gap-2 mr-4">
+                            <input type="text" value={editData.question} onChange={e => setEditData({ ...editData, question: e.target.value })} className="bg-black text-white border border-stone-700 rounded px-2 py-1 font-bold w-full" placeholder="Question" />
+                            <textarea value={editData.answer} onChange={e => setEditData({ ...editData, answer: e.target.value })} className="bg-black text-stone-400 border border-stone-700 rounded px-2 py-1 text-sm w-full h-24" placeholder="Answer" />
+                            <div className="flex items-center gap-2">
+                                <label className="text-[10px] text-stone-500 uppercase font-bold">Order:</label>
+                                <input type="number" value={editData.order} onChange={e => setEditData({ ...editData, order: e.target.value })} className="bg-black text-white border border-stone-700 rounded px-2 py-0.5 text-xs w-20" />
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                    {isEditing ? (
+                        <>
+                            <button onClick={handleSave} className="p-2 bg-green-600 hover:bg-green-500 text-white rounded"><Icons.Save /></button>
+                            <button onClick={onDelete} className="p-2 bg-red-900 hover:bg-red-700 text-white rounded"><Icons.Trash /></button>
+                        </>
+                    ) : (
+                        <button onClick={() => setIsEditing(true)} className="p-2 bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white rounded"><Icons.Edit /></button>
+                    )}
+                </div>
             </div>
         </div>
     );

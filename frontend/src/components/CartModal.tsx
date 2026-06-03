@@ -31,7 +31,8 @@ export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubm
     }, 0);
 
     const totalWeight = cart.reduce((acc, i) => acc + i.qty, 0);
-    const depositAmount = total * 0.3;
+    const depositPct = config?.depositPercentage ?? 30;
+    const depositAmount = total * (depositPct / 100);
 
     const handleSubmit = async () => {
         if (!name || !phone) return;
@@ -62,14 +63,21 @@ export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubm
                             <div className="space-y-4">
                                 <div className="flex gap-3">
                                     <div className="text-stone-500 mt-1"><Icons.Alert /></div>
-                                    <p className="text-sm text-stone-300">A <span className="text-white font-bold">30% deposit of ${depositAmount.toFixed(2)}</span> is required before we start the smoker.</p>
+                                    <p className="text-sm text-stone-300">A <span className="text-white font-bold">{depositPct}% deposit of ${depositAmount.toFixed(2)}</span> is required before we start the smoker.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <p className="text-xs font-bold text-stone-500 uppercase">Option 1: PayID (Instant)</p>
-                                    <div className="bg-stone-900 p-3 rounded border border-red-900/30 text-white font-mono flex justify-between items-center group">
+                                    <button 
+                                        onClick={() => {
+                                            const payId = config?.payIdInfo || '0400 000 000';
+                                            navigator.clipboard.writeText(payId);
+                                            // Optional: Add UI feedback here if needed, but the user just wanted it to work
+                                        }}
+                                        className="w-full bg-stone-900 p-3 rounded border border-red-900/30 text-white font-mono flex justify-between items-center group hover:border-red-600 transition-colors"
+                                    >
                                         <span>{config?.payIdInfo || '0400 000 000'}</span>
-                                        <span className="text-[8px] uppercase bg-red-900/50 px-1 rounded text-red-400">Copy</span>
-                                    </div>
+                                        <span className="text-[8px] uppercase bg-red-900/50 px-1 rounded text-red-400 group-hover:bg-red-600 group-hover:text-white transition-colors">Copy</span>
+                                    </button>
                                     <p className="text-[10px] text-stone-500 italic">Please use "{submittedOrder.orderNumber}" as the payment description.</p>
                                 </div>
                                 <div className="space-y-2">
@@ -159,14 +167,14 @@ export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubm
                                 <span>${total.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-red-500 text-2xl font-black italic uppercase tracking-tighter">
-                                <span>30% Deposit Due</span>
+                                <span>{depositPct}% Deposit Due</span>
                                 <span>${depositAmount.toFixed(2)}</span>
                             </div>
                         </div>
                         <div className="space-y-4">
                             <div className="text-xs bg-stone-950 p-3 rounded border border-stone-800 text-stone-400">
                                 <p className="font-bold text-red-500 mb-1 uppercase tracking-widest">Deposit Required</p>
-                                <p>Order will not be cooked until the 30% deposit is paid. We accept PayID and Cash.</p>
+                                <p>Order will not be cooked until the {depositPct}% deposit is paid. We accept PayID and Cash.</p>
                             </div>
                             <div className="space-y-3">
                                 <div>

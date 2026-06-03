@@ -36,6 +36,12 @@ export const API = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cfg)
     }),
+    updateFAQ: (faq: any) => fetch(`${API_BASE}/api/faqs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(faq)
+    }).then(res => res.json()),
+    deleteFAQ: (id: number) => fetch(`${API_BASE}/api/faqs/${id}`, { method: 'DELETE' }),
     resetDB: () => fetch(`${API_BASE}/api/reset`, { method: 'POST' }),
     login: async (code: string) => {
         const res = await fetch(`${API_BASE}/api/login`, {

@@ -78,7 +78,7 @@ function StockCard({ item, onAdd, disabled }: { item: any, onAdd?: () => void, d
     );
 }
 
-export default function CustomerView({ stock, onAddToCart, config }: { stock: any[], onAddToCart: (item: any) => void, config?: any }) {
+export default function CustomerView({ stock, faqs, onAddToCart, config }: { stock: any[], faqs: any[], onAddToCart: (item: any) => void, config?: any }) {
     const availableStock = stock.filter(item => item.available);
     const soldOutStock = stock.filter(item => !item.available);
 
@@ -114,9 +114,7 @@ export default function CustomerView({ stock, onAddToCart, config }: { stock: an
                             Terms of Service & Ordering Policy
                         </p>
                         <p className="text-stone-300 text-sm leading-relaxed">
-                            To secure your order, a <span className="text-white font-bold underline">30% non-refundable deposit</span> is required upfront before smoking begins. 
-                            Payments can be made via <span className="text-red-400 font-bold">PayID</span> or <span className="text-red-400 font-bold">Cash</span>.
-                            The remaining balance is payable upon pickup.
+                            {config?.termsOfService || `To secure your order, a ${config?.depositPercentage || 30}% non-refundable deposit is required upfront before smoking begins. Payments can be made via PayID or Cash. The remaining balance is payable upon pickup.`}
                         </p>
                     </div>
                     
@@ -132,7 +130,7 @@ export default function CustomerView({ stock, onAddToCart, config }: { stock: an
                     </div>
 
                     <div className="text-[10px] text-stone-500 italic flex items-center gap-1">
-                        <Icons.Check /> Deposits cover material costs and are final. PayID details provided after ordering.
+                        <Icons.Check /> {config?.orderingPolicy || 'Deposits cover material costs and are final. PayID details provided after ordering.'}
                     </div>
                 </div>
             </div>
@@ -153,6 +151,20 @@ export default function CustomerView({ stock, onAddToCart, config }: { stock: an
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {soldOutStock.map(item => (
                             <StockCard key={item.id} item={item} disabled={true} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {faqs && faqs.length > 0 && (
+                <div className="pt-12 border-t border-stone-800 mt-20">
+                    <h3 className="text-2xl font-bold text-stone-300 mb-8 flex items-center gap-2 uppercase italic tracking-tighter"><Icons.Alert /> Frequently Asked Questions</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {faqs.map(faq => (
+                            <div key={faq.id} className="space-y-2">
+                                <h4 className="font-bold text-red-500 text-lg uppercase tracking-tight">{faq.question}</h4>
+                                <p className="text-stone-400 text-sm leading-relaxed">{faq.answer}</p>
+                            </div>
                         ))}
                     </div>
                 </div>

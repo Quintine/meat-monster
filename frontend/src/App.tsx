@@ -10,6 +10,7 @@ function App() {
   const [view, setView] = useState<'customer' | 'admin'>('customer');
   const [stock, setStock] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [faqs, setFaqs] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCartModal, setShowCartModal] = useState(false);
@@ -25,19 +26,28 @@ function App() {
       const data = await API.fetchData();
       setStock(data.stock);
       setOrders(data.orders.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+      setFaqs(data.faqs || []);
       if (data.config) {
         setConfig(data.config);
       }
-      setIsLoading(false);
     } catch (err) {
       console.error("Server connection failed.", err);
     }
   };
 
   useEffect(() => {
+    // Force a minimum loading time of 5 seconds
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+
     refreshData();
     const intervalId = setInterval(refreshData, 5000);
-    return () => clearInterval(intervalId);
+    
+    return () => {
+      clearTimeout(timer);
+      clearInterval(intervalId);
+    };
   }, []);
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -158,7 +168,7 @@ function App() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {notification && <div className="fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-2xl animate-bounce z-50 font-bold tracking-wide border border-red-400">{notification}</div>}
-        {view === 'customer' ? <CustomerView stock={stock} onAddToCart={(item: any) => setPickerItem(item)} config={config} /> : <AdminDashboard stock={stock} orders={orders} config={config} refreshData={refreshData} notify={showNotification} promptConfirm={promptConfirm} />}
+        {view === 'customer' ? <CustomerView stock={stock} faqs={faqs} onAddToCart={(item: any) => setPickerItem(item)} config={config} /> : <AdminDashboard stock={stock} orders={orders} config={config} faqs={faqs} refreshData={refreshData} notify={showNotification} promptConfirm={promptConfirm} />}
       </main>
 
       {showCartModal && <CartModal cart={cart} config={config} onClose={() => setShowCartModal(false)} onRemove={removeFromCart} onUpdateQty={updateCartQty} onSubmit={submitOrder} />}
