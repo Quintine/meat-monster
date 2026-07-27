@@ -40,6 +40,8 @@ export default function CartModal({ cart, onClose, onRemove, onUpdateQty, onSubm
         try {
             const order = await onSubmit(name, phone);
             setSubmittedOrder(order);
+        } catch {
+            // The parent displays the API error and keeps the cart open for correction.
         } finally {
             setIsSubmitting(false);
         }

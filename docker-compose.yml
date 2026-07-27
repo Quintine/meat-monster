@@ -4,9 +4,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - meat-data:/app/backend/prisma
+      - meat-data:/app/data
     environment:
-      - DATABASE_URL=file:./dev.db
+      - DATABASE_URL=file:/app/data/dev.db
     restart: always
 
 volumes:

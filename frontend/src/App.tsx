@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { API } from './services/api';
+import { API, ApiError } from './services/api';
 import { Icons } from './components/Icons';
 import CustomerView from './components/CustomerView';
 import AdminDashboard from './components/AdminDashboard';
@@ -21,17 +21,28 @@ function App() {
   const [confirmModal, setConfirmModal] = useState<{ show: boolean, message: string, onConfirm: (() => void) | null }>({ show: false, message: '', onConfirm: null });
   const [pickerItem, setPickerItem] = useState<any>(null);
 
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   const refreshData = async () => {
     try {
       const data = await API.fetchData();
-      setStock(data.stock);
-      setOrders(data.orders.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+      setStock(data.stock || []);
+      setOrders((data.orders || []).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
       setFaqs(data.faqs || []);
       if (data.config) {
         setConfig(data.config);
       }
     } catch (err) {
       console.error("Server connection failed.", err);
+      if (err instanceof ApiError && err.status === 401) {
+        API.logout();
+        setOrders([]);
+        setView('customer');
+        showNotification('Admin session expired. Please log in again.');
+      }
     }
   };
 
@@ -49,18 +60,18 @@ function App() {
       clearInterval(intervalId);
     };
   }, []);
-  const showNotification = (msg: string) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const promptConfirm = (message: string, action: () => void) => {
+  const promptConfirm = (message: string, action: () => void | Promise<void>) => {
     setConfirmModal({
       show: true,
       message,
       onConfirm: async () => {
-        await action();
-        setConfirmModal({ show: false, message: '', onConfirm: null });
+        try {
+          await action();
+        } catch (error) {
+          showNotification(error instanceof Error ? error.message : 'Action failed');
+        } finally {
+          setConfirmModal({ show: false, message: '', onConfirm: null });
+        }
       }
     });
   };
@@ -128,9 +139,10 @@ function App() {
       await API.login(adminCodeInput);
       setView('admin');
       setShowAdminLogin(false);
+      await refreshData();
       setAdminCodeInput('');
       showNotification("Logged in as Admin");
-    } catch (err) {
+    } catch {
       showNotification("Incorrect Admin Code");
     }
   };
@@ -159,7 +171,7 @@ function App() {
                 )}
               </button>
             )}
-            <button onClick={() => { if (view === 'admin') setView('customer'); else setShowAdminLogin(true); }} className={`p-2 rounded-md transition-colors ${view === 'admin' ? 'bg-red-900/50 text-red-200' : 'text-stone-600 hover:text-stone-400'}`}>
+            <button onClick={() => { if (view === 'admin') { API.logout(); setOrders([]); setView('customer'); } else setShowAdminLogin(true); }} className={`p-2 rounded-md transition-colors ${view === 'admin' ? 'bg-red-900/50 text-red-200' : 'text-stone-600 hover:text-stone-400'}`}>
               {view === 'admin' ? <Icons.X /> : <Icons.Lock />}
             </button>
           </div>

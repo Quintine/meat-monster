@@ -7,6 +7,10 @@ export default function AdminDashboard({ stock, orders, config, faqs, refreshDat
     const [newAdminCode, setNewAdminCode] = useState('');
     const [settingsForm, setSettingsForm] = useState<any>(null);
 
+    const notifyError = (error: unknown) => {
+        notify(error instanceof Error ? error.message : "Action failed");
+    };
+
     useEffect(() => {
         if (config && !settingsForm) {
             setSettingsForm({
@@ -15,17 +19,21 @@ export default function AdminDashboard({ stock, orders, config, faqs, refreshDat
                 payIdInfo: config.payIdInfo || '',
                 termsOfService: config.termsOfService || '',
                 orderingPolicy: config.orderingPolicy || '',
-                depositPercentage: config.depositPercentage || 30
+                depositPercentage: config.depositPercentage ?? 30
             });
         }
     }, [config, settingsForm]);
 
     const handleSaveSettings = async () => {
         if (!settingsForm) return;
-        await API.updateConfig(settingsForm);
-        notify("Settings Saved");
-        setSettingsForm(null);
-        refreshData();
+        try {
+            await API.updateConfig(settingsForm);
+            notify("Settings Saved");
+            setSettingsForm(null);
+            refreshData();
+        } catch (error) {
+            notifyError(error);
+        }
     };
 
     const totalRevenue = orders.reduce((acc: number, order: any) => acc + (order.estimatedTotal || 0), 0);
@@ -37,10 +45,15 @@ export default function AdminDashboard({ stock, orders, config, faqs, refreshDat
             notify("Code must be at least 4 characters");
             return;
         }
-        await API.updateConfig({ adminCode: newAdminCode });
-        setNewAdminCode('');
-        notify("Admin Password Updated");
-        refreshData();
+        try {
+            await API.updateConfig({ adminCode: newAdminCode });
+            API.setAdminCode(newAdminCode);
+            setNewAdminCode('');
+            notify("Admin Password Updated");
+            refreshData();
+        } catch (error) {
+            notifyError(error);
+        }
     };
 
 
@@ -55,16 +68,30 @@ export default function AdminDashboard({ stock, orders, config, faqs, refreshDat
             bulk1Threshold: 0, bulk1Price: 0,
             bulk2Threshold: 0, bulk2Price: 0
         };
-        await API.updateStock(newItem);
-        refreshData();
-        notify("New Item Added");
+        try {
+            await API.updateStock(newItem);
+            refreshData();
+            notify("New Item Added");
+        } catch (error) {
+            notifyError(error);
+        }
     };
 
     const updateStockItem = async (id: number, updates: any) => {
         const currentItem = stock.find((s: any) => s.id === id) || { id };
-        await API.updateStock({ ...currentItem, ...updates });
-        refreshData();
-        notify("Stock updated");
+        const configuredAvailable = updates.available ?? currentItem.configuredAvailable ?? currentItem.available;
+        try {
+            await API.updateStock({
+                ...currentItem,
+                ...updates,
+                available: configuredAvailable,
+                configuredAvailable
+            });
+            refreshData();
+            notify("Stock updated");
+        } catch (error) {
+            notifyError(error);
+        }
     };
 
     const deleteStockItem = (id: number) => {
@@ -81,16 +108,24 @@ export default function AdminDashboard({ stock, orders, config, faqs, refreshDat
             answer: "Answer here...",
             order: faqs.length + 1
         };
-        await API.updateFAQ(newFAQ);
-        refreshData();
-        notify("New FAQ Added");
+        try {
+            await API.updateFAQ(newFAQ);
+            refreshData();
+            notify("New FAQ Added");
+        } catch (error) {
+            notifyError(error);
+        }
     };
 
     const updateFAQ = async (id: number, updates: any) => {
         const currentFAQ = faqs.find((f: any) => f.id === id) || { id };
-        await API.updateFAQ({ ...currentFAQ, ...updates });
-        refreshData();
-        notify("FAQ updated");
+        try {
+            await API.updateFAQ({ ...currentFAQ, ...updates });
+            refreshData();
+            notify("FAQ updated");
+        } catch (error) {
+            notifyError(error);
+        }
     };
 
     const deleteFAQ = (id: number) => {
@@ -101,19 +136,11 @@ export default function AdminDashboard({ stock, orders, config, faqs, refreshDat
         });
     };
 
-    const clearAllOrders = () => {
-        promptConfirm("WARNING: This will delete ALL current order history. Proceed?", async () => {
-            await API.clearOrders();
+    const resetBatch = () => {
+        promptConfirm("Start a fresh cooking batch? This clears current orders and reactivates every inventory item, while preserving your menu and settings.", async () => {
+            await API.resetBatch();
             refreshData();
-            notify("All Orders Cleared");
-        });
-    };
-
-    const resetDatabase = () => {
-        promptConfirm("Wipe all data and reset to defaults?", async () => {
-            await API.resetDB();
-            refreshData();
-            notify("Database Reset to Defaults");
+            notify("Fresh Cooking Batch Started");
         });
     };
 
@@ -198,7 +225,7 @@ export default function AdminDashboard({ stock, orders, config, faqs, refreshDat
                                             <div className="flex gap-2">
                                                 <select 
                                                     value={order.status || 'Pending'}
-                                                    onChange={(e) => API.updateOrderStatus(order.id, e.target.value).then(refreshData)}
+                                                    onChange={(e) => API.updateOrderStatus(order.id, e.target.value).then(refreshData).catch(notifyError)}
                                                     className="bg-stone-900 border border-stone-800 rounded px-2 py-1 text-xs text-stone-400 focus:border-red-600 outline-none"
                                                 >
                                                     <option value="Pending">Pending</option>
@@ -227,7 +254,7 @@ export default function AdminDashboard({ stock, orders, config, faqs, refreshDat
                                             <div className="text-right">
                                                 <p className="text-[10px] text-stone-500 uppercase font-bold">Estimated Total</p>
                                                 <p className="text-xl font-black text-red-500">${order.estimatedTotal?.toFixed(2)}</p>
-                                                <p className="text-[10px] text-red-800 font-bold uppercase tracking-tighter">30% Deposit: ${(order.estimatedTotal * 0.3).toFixed(2)}</p>
+                                                <p className="text-[10px] text-red-800 font-bold uppercase tracking-tighter">{config?.depositPercentage ?? 30}% Deposit: ${(order.estimatedTotal * ((config?.depositPercentage ?? 30) / 100)).toFixed(2)}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -321,9 +348,9 @@ export default function AdminDashboard({ stock, orders, config, faqs, refreshDat
                             <button onClick={handleUpdatePassword} disabled={!newAdminCode} className="w-full bg-red-700 hover:bg-red-600 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold py-3 rounded transition-colors">Update Password</button>
                         </div>
                         <div className="space-y-4 border-t border-stone-800 pt-8">
-                            <p className="text-xs font-bold text-stone-500 uppercase">Danger Zone</p>
-                            <button onClick={clearAllOrders} className="w-full py-3 border border-red-900/50 text-red-500 hover:bg-red-900/20 rounded text-sm font-bold transition-colors">Clear All Order History</button>
-                            <button onClick={resetDatabase} className="text-xs text-stone-600 hover:text-red-500 underline block w-full">Reset Entire Database to Defaults</button>
+                            <p className="text-xs font-bold text-stone-500 uppercase">Cooking Batch</p>
+                            <p className="text-xs text-stone-500">Clears current orders and restores all inventory availability. Menu items, pricing, FAQs, and settings are preserved.</p>
+                            <button onClick={resetBatch} className="w-full py-3 border border-red-900/50 text-red-500 hover:bg-red-900/20 rounded text-sm font-bold transition-colors">Start Fresh Cooking Batch</button>
                         </div>
                     </div>
                 )}
@@ -393,6 +420,7 @@ function AdminFAQItem({ item, onUpdate, onDelete }: any) {
 function AdminStockItem({ item, onUpdate, onDelete }: any) {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState<any>({});
+    const configuredAvailable = item.configuredAvailable ?? item.available;
 
     useEffect(() => {
         if (!isEditing) {
@@ -441,7 +469,7 @@ function AdminStockItem({ item, onUpdate, onDelete }: any) {
                             <textarea value={editData.description} onChange={e => setEditData({ ...editData, description: e.target.value })} className="bg-black text-stone-400 border border-stone-700 rounded px-2 py-1 text-xs w-full h-16" placeholder="Description" />
                         </div>
                     )}
-                    {!isEditing && <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${item.available ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>{item.available ? 'Active' : 'Disabled'}</span>}
+                    {!isEditing && <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${item.available ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>{item.available ? 'Active' : configuredAvailable ? 'Batch Full' : 'Disabled'}</span>}
                 </div>
                 <div className="flex items-center gap-2">
                     {isEditing ? (
@@ -452,7 +480,7 @@ function AdminStockItem({ item, onUpdate, onDelete }: any) {
                     ) : (
                         <button onClick={() => setIsEditing(true)} className="p-2 bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white rounded"><Icons.Edit /></button>
                     )}
-                    <button onClick={() => onUpdate({ available: !item.available })} className={`px-3 py-2 rounded font-bold text-xs uppercase w-24 text-center ${item.available ? 'bg-stone-800 text-red-400 border border-red-900/30 hover:bg-red-900/20' : 'bg-green-900/20 text-green-400 border border-green-900/30 hover:bg-green-900/40'}`}>{item.available ? 'Sold Out' : 'Activate'}</button>
+                    <button onClick={() => onUpdate({ available: !configuredAvailable })} className={`px-3 py-2 rounded font-bold text-xs uppercase w-24 text-center ${configuredAvailable ? 'bg-stone-800 text-red-400 border border-red-900/30 hover:bg-red-900/20' : 'bg-green-900/20 text-green-400 border border-green-900/30 hover:bg-green-900/40'}`}>{configuredAvailable ? 'Disable' : 'Activate'}</button>
                 </div>
             </div>
             {!isEditing ? (

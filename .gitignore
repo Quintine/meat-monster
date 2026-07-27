@@ -8,3 +8,4 @@ backend/prisma/dev.db
 frontend/dist/
 backend/dist/
 .DS_Store
+.serena/

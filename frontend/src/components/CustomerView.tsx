@@ -92,7 +92,7 @@ export default function CustomerView({ stock, faqs, onAddToCart, config }: { sto
                 hour: '2-digit',
                 minute: '2-digit'
             });
-        } catch (e) { return d; }
+        } catch { return d; }
     };
 
     return (
@@ -114,7 +114,7 @@ export default function CustomerView({ stock, faqs, onAddToCart, config }: { sto
                             Terms of Service & Ordering Policy
                         </p>
                         <p className="text-stone-300 text-sm leading-relaxed">
-                            {config?.termsOfService || `To secure your order, a ${config?.depositPercentage || 30}% non-refundable deposit is required upfront before smoking begins. Payments can be made via PayID or Cash. The remaining balance is payable upon pickup.`}
+                            {config?.termsOfService || `To secure your order, a ${config?.depositPercentage ?? 30}% non-refundable deposit is required upfront before smoking begins. Payments can be made via PayID or Cash. The remaining balance is payable upon pickup.`}
                         </p>
                     </div>
                     
